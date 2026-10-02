@@ -1,0 +1,16 @@
+{
+ "started": "2026-10-02T13:13:47+0200",
+ "method": "TTFT prefill + inter-token decode, C1, natural EOS, no max_tokens",
+ "rows": [
+  {
+   "prompt_tokens": 261000,
+   "ttft_s": 341.58,
+   "prefill_tok_s": 764.1,
+   "completion_tokens": 153,
+   "decode_tok_s": 20.59,
+   "finish": "stop",
+   "answer_head": "Based on the dump, here are three modules and what they do:\n\n1. **`msgfmt.py`** \u2014 Converts a textual Uniforum-style message catalog (`.po` file) into a binary GNU catalog (`.mo` file), similar to the "
+  }
+ ],
+ "finished": "2026-10-02T13:19:37+0200"
+}

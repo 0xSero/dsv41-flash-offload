@@ -1,0 +1,52 @@
+{
+ "started": "2026-10-02T12:48:55+0200",
+ "method": "TTFT prefill + inter-token decode, C1, natural EOS, no max_tokens",
+ "rows": [
+  {
+   "prompt_tokens": 8192,
+   "ttft_s": 13.91,
+   "prefill_tok_s": 589.1,
+   "completion_tokens": 151,
+   "decode_tok_s": 16.38,
+   "finish": "stop",
+   "answer_head": "Based on the dump, here are three modules and what they do:\n\n1. **`msgfmt.py`** \u2014 Converts a textual Uniforum-style message catalog (`.po` file) into a binary GNU catalog (`.mo` file), similar to the "
+  },
+  {
+   "prompt_tokens": 32768,
+   "ttft_s": 42.3,
+   "prefill_tok_s": 774.6,
+   "completion_tokens": 130,
+   "decode_tok_s": 19.42,
+   "finish": "stop",
+   "answer_head": "Based on the dump, here are three modules and what they do:\n\n1. **`msgfmt.py`** \u2014 Converts a textual Uniforum-style `.po` message catalog into a binary GNU `.mo` catalog, similar to GNU's `msgfmt` pro"
+  },
+  {
+   "prompt_tokens": 65536,
+   "ttft_s": 80.59,
+   "prefill_tok_s": 813.2,
+   "completion_tokens": 157,
+   "decode_tok_s": 20.51,
+   "finish": "stop",
+   "answer_head": "Based on the dump, here are three modules and what they do:\n\n1. **`msgfmt.py`** \u2014 Converts a textual Uniforum-style message catalog (`.po` file) into a binary GNU catalog (`.mo` file), similar to the "
+  },
+  {
+   "prompt_tokens": 131072,
+   "ttft_s": 165.63,
+   "prefill_tok_s": 791.4,
+   "completion_tokens": 159,
+   "decode_tok_s": 20.91,
+   "finish": "stop",
+   "answer_head": "Based on the dump, here are three modules and what they do:\n\n1. **`msgfmt.py`** \u2014 Converts a textual Uniforum-style message catalog (`.po` file) into a binary GNU catalog (`.mo` file), similar to the "
+  },
+  {
+   "prompt_tokens": 196608,
+   "ttft_s": 251.7,
+   "prefill_tok_s": 781.1,
+   "completion_tokens": 141,
+   "decode_tok_s": 20.48,
+   "finish": "stop",
+   "answer_head": "Based on the dump, here are three modules and what they do:\n\n1. **`msgfmt.py`** \u2014 Converts a textual Uniforum-style message catalog (`.po` file) into a binary GNU catalog (`.mo` file) for use with get"
+  }
+ ],
+ "finished": "2026-10-02T12:58:48+0200"
+}

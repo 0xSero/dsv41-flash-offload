@@ -6,14 +6,14 @@ completions). All routed experts are pinned in host RAM. During prefill the copy
 in batches, and busy experts run as FP16 GEMMs. During decode a VRAM mirror cache holds the hottest experts and an
 AVX2 kernel on the host cores computes the cold misses. The Engram tables stay memory-mapped on NVMe.
 
-This is the code and configuration of run **D118** of the FreeToken-EXL3 campaign: D061 (staged-DMA prefill, fat
+This is the code and configuration of run **D119** (= D118 at 262k context) of the FreeToken-EXL3 campaign: D061 (staged-DMA prefill, fat
 threshold 32) + the CPU expert tier + the **elastic** VRAM expert cache. Stack: vLLM 0.13 (lazymio/vllm-backport,
 DeepSeek-V4.1 support) + Ampere patches + the `vllm_exl3` plugin with exllamav3 kernels, built for sm_86. A few small
 source patches go on top, and the image applies them at build time.
 
-Status: **candidate**. The D118 numbers are still being measured. Prefill fidelity of the staged-DMA path is just
-outside the campaign's inherited guard (see [Quality](#quality)). The 262,144-token context in the default launch
-has not been run on the GPU yet (see [Context length](#context-length)).
+Status: **candidate**. The default launch (262,144-token context, 1.5 GiB fp8 KV) was measured end to end as run
+**D119** at C1 from 8k to 261k tokens: prefill 589-813 tok/s, decode 16.4-20.9 tok/s (table below). Prefill
+fidelity of the staged-DMA path is just outside the campaign's inherited guard (see [Quality](#quality)).
 
 ## Measured
 
@@ -33,12 +33,33 @@ decode (FULL_DECODE_ONLY, sizes 1-24).
 | D107 | + AVX2 CPU tier + VRAM expert cache (709 slots, 8.76 GiB), best decode | 96.9 | 98.6 | 21.34 | 26.27 | 28.30 | 1 GiB | 1,024 | [results/D107](results/D107/sweep.json) |
 | D061 | staged-DMA prefill + FP16 GEMM for busy experts (fat threshold 32), cache off, decode not measured | 565.2 | 744.9 | - | - | - | 1 GiB | 16,384 | [results/D061](results/D061/sweep.json) |
 | D117 | D061 + CPU tier + non-elastic expert cache (cache starved by prefill buffers) | 575.2 | 765.5 | 15.55 | 17.74 | (sweep running at capture) | 1 GiB | 16,384 | [results/D117](results/D117/sweep.json) |
-| **D118 (pending)** | D117 + elastic cache (`DSV41_EC_ELASTIC=1`), this image's configuration | pending | pending | pending | pending | pending | 1 GiB | 16,384 | being measured |
 
 Units are tok/s. C1 at 32k context: D030 4.11, D107 21.33. D117 was captured at 2026-10-02T12:41+02:00 while its
 sweep was still running. D107 had a cache hit rate of 0.408. Host RAM: MemAvailable fell by 195-199 GiB from
 container start to ready in D030, D061, D107 and D117 (`memory-*.txt` in each results directory). VRAM at ready:
 14,165-15,991 MiB including about 1 GB for the desktop.
+
+### Default launch across the context window (D119, C1)
+
+D119 is this image's default configuration (D118 + `--max-model-len 262144` + `--kv-cache-memory 1.5 GiB` = 297,224
+fp8 KV tokens + tool/reasoning parsers + API key), captured 2026-10-02 12:48-13:25 CEST. Method: the TTFT /
+inter-token method of `vllm bench serve` and NVIDIA genai-perf, but with **no output cap**: each prompt is real text
+(Python stdlib source) truncated to the length, followed by a short question, and the greedy answer runs to its
+natural end ([bench/ctx_scan.py](bench/ctx_scan.py)). Prefill = prompt tokens / time to first token. Decode =
+(completion tokens - 1) / time between first and last token. One request per length, C1.
+
+| prompt tokens | prefill (tok/s) | TTFT (s) | decode C1 (tok/s) | completion tokens | finish | KV | GPUs |
+|---|---|---|---|---|---|---|---|
+| 8,192 | 589.1 | 13.9 | 16.38 | 151 | stop | 262k (1.5 GiB) | 1 |
+| 32,768 | 774.6 | 42.3 | 19.42 | 130 | stop | 262k (1.5 GiB) | 1 |
+| 65,536 | 813.2 | 80.6 | 20.51 | 157 | stop | 262k (1.5 GiB) | 1 |
+| 131,072 | 791.4 | 165.6 | 20.91 | 159 | stop | 262k (1.5 GiB) | 1 |
+| 196,608 | 781.1 | 251.7 | 20.48 | 141 | stop | 262k (1.5 GiB) | 1 |
+| 261,000 | 764.1 | 341.6 | 20.59 | 153 | stop | 262k (1.5 GiB) | 1 |
+
+Evidence: [results/D119](results/D119/) (`ctx_scan.json`, `ctx_scan_261k.json`, launch scripts). The 8k decode is
+lower because the answer is short and the elastic expert cache (441 slots, 5.45 GiB at this KV size) is still
+re-warming after the prefill released it. Every answer was correct and stopped on its own.
 
 Run directories on the measured host: `runs/2026-10-01-D030-baseline-stability-p2`,
 `runs/2026-10-02-D061-prefill16384-dma-gemm-fat32`, `runs/2026-10-02-D107-ec-kv1g-margin500`,
@@ -66,7 +87,7 @@ prefill instead (D047 path). It is slower, and this image has not measured it.
 | tier | holds | size |
 |---|---|---|
 | VRAM (RTX 3090, 24 GiB, 936 GB/s) | dense weights: attention incl. `wo_a` expanded to FP16, embeddings, shared experts, LM head, routers, hyper-connections, Engram projections | ~7.7 GiB |
-| | KV cache, fp8 | 1 GiB measured (4.5 GiB default here, see below) |
+| | KV cache, fp8 | 1.5 GiB (297,224 tokens; default, D119) |
 | | runtime: CUDA graphs, 16k-token prefill activations, DMA staging slots (2 x 8 experts) | ~5 GiB |
 | | expert mirror cache: hottest (layer, expert) pairs, sized from free VRAM minus 900 MB. With the elastic cache it is released before each prefill step (> 64 tokens) and refilled with the same experts when decode resumes | whatever is left (8.76 GiB = 709 of 15,360 experts in D107) |
 | DDR4 (pinned, GPU-mapped) | all 15,360 routed experts, the home copy that prefill DMA, decode zero-copy reads, the VRAM cache and the CPU tier all read | 190.5 GiB |
@@ -80,16 +101,32 @@ and prefill stayed near 95 tok/s. Running 16,384-token chunks with copy-engine s
 overlaps it with compute (D061: 565 / 745 tok/s). In decode only about 3.5 experts per layer miss the VRAM cache.
 The CPU computes them from DDR4 in about 1 ms per layer while the GPU handles the hits.
 
-## Host requirements
+## Host requirements (exact, measured on D119)
 
-- 1x 24 GB NVIDIA GPU, sm_86 (RTX 3090 measured), with a driver that supports CUDA 13.0.
-- About 215 GiB of host RAM available to the container (measured 195-199 GiB pinned and allocated, plus headroom),
-  `--ulimit memlock=-1`, and `--cap-add IPC_LOCK`.
-- An x86-64 CPU with AVX2, FMA and F16C. The CPU tier defaults to cores 2-23 and 22 threads (`DSV41_CT_CPUS`,
-  `DSV41_CT_THREADS`). Change them on smaller hosts.
-- About 430 GB of NVMe for the inputs and the pack. Keep the Engram shards on fast local NVMe because rows are read
-  on demand.
-- Docker with the NVIDIA container toolkit.
+Measured on the running D119 server (cgroup v2 `memory.peak` / `memory.stat` of the container, `du -sb`, `nvidia-smi`):
+
+| resource | measured | minimum with a 30 GB buffer |
+|---|---|---|
+| Host RAM, anonymous (pinned experts 190.5 GiB + process) | 198,653 MiB = 194.0 GiB (208.3 GB) | - |
+| Host RAM, container peak incl. Engram page cache | 217,238 MiB = 212.1 GiB (227.8 GB) | 212.1 GiB + ~4 GiB headless OS + 30 GB (27.9 GiB) = **244 GiB -> a 256 GiB host** |
+| NVMe: Mia EXL3 3.0 bpw checkpoint (rev c5534b90) | 219,273,773,789 B = 219.3 GB | |
+| NVMe: DeepSeek-V4.1-Flash shards 47-48 (Engram, rev 2cba9e42) | 203,080,580,826 B = 203.1 GB | |
+| NVMe: overlay pack (`pack/prepare_pack.py`) | 2,937,706,810 B = 2.9 GB | |
+| NVMe: docker image | 32.6 GB | |
+| NVMe: JIT/build cache | 4.7 MB | |
+| NVMe total | 457.9 GB | 457.9 GB + 30 GB = **488 GB free** -> a 1 TB drive (a 512 GB drive leaves no room after formatting) |
+| VRAM | 21,852 MiB used by the server (+262 MiB desktop) of 24,576 MiB | one **24 GB** sm_86 GPU |
+| CPU | 22 AVX2 threads for the CPU expert tier (cores 2-23) + 2 for the engine | x86-64 with AVX2/FMA/F16C; set `DSV41_CT_CPUS`/`DSV41_CT_THREADS` on smaller hosts |
+
+Notes:
+- The 194 GiB anonymous part must be resident (pinned with `cudaHostRegister`): run with `--ulimit memlock=-1` and
+  `--cap-add IPC_LOCK`, and do not let the container memory limit fall below ~215 GiB.
+- The Engram tables (203 GB) are **not** loaded into RAM; they are memory-mapped and read on demand. The page cache
+  they use (17.3 GiB charged to the container here) is reclaimable. With only 30 GB spare, Engram reads go to the
+  NVMe more often; the D119 numbers were measured with ~265 GiB free, so expect some loss on a 256 GiB host
+  (not measured).
+- Keep all inputs on local NVMe; the Engram rows are random 4 KiB-class reads.
+- Docker with the NVIDIA container toolkit, a driver that supports CUDA 13.0.
 
 ## Run
 
@@ -160,24 +197,43 @@ endpoint defaults it to unlimited (bounded by the context) through `runtime/patc
 
 ## Context length
 
-The default launch is `--max-model-len 262144` with `--kv-cache-memory 4.5 GiB` (`DSV41_MAX_MODEL_LEN`,
-`DSV41_KV_CACHE_BYTES`) for agent use. **This combination has not been run on the GPU.** Every measured run used
-65,536 tokens. At 16,384-token chunks, vLLM sized a 1 GiB fp8 KV at 65,974 tokens (D117 log). At 1,024-token
+The default launch is `--max-model-len 262144` with `--kv-cache-memory 1.5 GiB` (`DSV41_MAX_MODEL_LEN`,
+`DSV41_KV_CACHE_BYTES`). vLLM sized that as 297,224 fp8 KV tokens (1.13x one 262,144-token request); 1.0 GiB is
+refused for 262,144 (it needs 1.32 GiB). This is D119, measured above up to a 261,000-token prompt. The P2 rows
+(D030-D117) used 65,536 tokens. At 16,384-token chunks, vLLM sized a 1 GiB fp8 KV at 65,974 tokens (D117 log). At 1,024-token
 chunks the same 1 GiB came to 387,069 tokens (D107 log), so the token count is not simply bytes x constant. If vLLM
 refuses to start with a KV-too-small error, raise `DSV41_KV_CACHE_BYTES`. Every extra GiB of KV is a GiB less for
 the expert cache, which lowers decode speed. To reproduce the measured configuration exactly, pass
 `-e DSV41_MAX_MODEL_LEN=65536 -e DSV41_KV_CACHE_BYTES=1073741824`.
 
+## Use from an agent (Pi)
+
+Add a provider to `~/.pi/agent/models.json` (key from your key file; DeepSeek-V4.1 only accepts reasoning effort
+low / high / max, so map Pi's levels):
+
+```json
+"omarchy-dsv41": {
+  "baseUrl": "http://<host>:<port>/v1", "apiKey": "<your key>", "api": "openai-completions",
+  "models": [{ "id": "deepseek-v4.1-flash", "name": "DeepSeek-V4.1-Flash (1x3090 offload)", "reasoning": true,
+    "input": ["text"], "contextWindow": 262144, "maxTokens": 262144,
+    "thinkingLevelMap": {"minimal": "low", "low": "low", "medium": "high", "high": "high", "xhigh": "max", "max": "max"},
+    "compat": {"supportsDeveloperRole": false, "maxTokensField": "max_tokens"} }]
+}
+```
+
+Then `pi --model omarchy-dsv41/deepseek-v4.1-flash`. Verified 2026-10-02: a tool call (read a file) and the answer
+both returned 200.
+
 ## Configuration
 
-Every value below is an environment variable with the D118 default. The launch line itself is at the end of
+Every value below is an environment variable with the D119 default. The launch line itself is at the end of
 [`docker/entrypoint.sh`](docker/entrypoint.sh). Extra arguments after the image name are appended to `vllm serve`.
 
 | variable | default | meaning |
 |---|---|---|
 | `VLLM_API_KEY` / `DSV41_API_KEY_FILE` | unset | API key (env, or a mounted file). Without one the endpoint is open and a warning is logged |
-| `DSV41_MAX_MODEL_LEN` | 262144 | `--max-model-len` (measured: 65536) |
-| `DSV41_KV_CACHE_BYTES` | 4831838208 | `--kv-cache-memory` (measured: 1073741824) |
+| `DSV41_MAX_MODEL_LEN` | 262144 | `--max-model-len` (D119) |
+| `DSV41_KV_CACHE_BYTES` | 1610612736 | `--kv-cache-memory` (1.5 GiB = 297,224 tokens; D119) |
 | `DSV41_MAX_NUM_BATCHED_TOKENS` | 16384 | prefill chunk |
 | `EXL3_HOST_DMA` / `_BATCH` / `_SLOTS` / `_COLD_FUSED` | 1 / 8 / 2 / 1 | copy-engine staging of cold experts in prefill |
 | `EXL3_DMA_GEMM`, `VLLM_EXL3_FAT_THRESHOLD` | 1, 32 | experts with more than 32 routed rows in a chunk run as FP16 GEMMs from the staging slot |
