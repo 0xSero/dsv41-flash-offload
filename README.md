@@ -221,6 +221,12 @@ scripts once at build time, so there is no runtime mount. Differences from the m
 
 Nothing else is edited.
 
+Build check (2026-10-02, CPU only): `scripts/install.sh` run inside the campaign image `dsv41-exl3:ampere-d005`
+matched all 9 receipts. It built and loaded `engram_disk.so`, and `ct.ct_vllm` imported and resolved its kernel
+directory. Parsing the `vllm serve` flags cannot be checked without a GPU in this image, because vLLM's sm80 FP8
+helper fails to import when Triton finds no driver. The `deepseek_v41` tool and reasoning parsers are present in
+the image's vLLM registries.
+
 ## Layout
 
 ```

@@ -17,7 +17,7 @@ Install: import dsv41.ct.ct_vllm as ct; ct.install(vllm_exl3.exl3)
 import os, time, json
 import torch
 
-_KDIR = os.environ.get("DSV41_CT_KDIR", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "kernels", "cpu_avx2"))
+_KDIR = os.environ.get("DSV41_CT_KDIR", os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "kernels", "cpu_avx2"))
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _H = None
 _CU = None
