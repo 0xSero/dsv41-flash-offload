@@ -1,0 +1,1 @@
+{"file": "/usr/local/lib/python3.12/dist-packages/vllm_exl3/exl3.py", "before": "d132806c16b664cc9ba28a45d781c6a81e24fcd45f5d79d9deda6a8621fdbbc2", "after": "55826055c668af8db4461fdb9d838d63f7b53e3c1281c9b3432c6542d18aeff6", "strategy": "one weight copy per batch; <=2048 routed rows/expert/pass"}

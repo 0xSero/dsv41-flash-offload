@@ -1,0 +1,293 @@
+{
+ "card": "rtx3090",
+ "config": "D117-D061+EC",
+ "started": "2026-10-02T12:14:11+0200",
+ "ctx_len": 65536,
+ "protocol": "bench/sweep.py v1",
+ "api": "vllm",
+ "served_model": {
+  "id": "deepseek-v4.1-flash",
+  "object": "model",
+  "created": 1790936051,
+  "owned_by": "vllm",
+  "root": "/models/DSV41-EXL3-3090-D010",
+  "parent": null,
+  "max_model_len": 65536,
+  "permission": [
+   {
+    "id": "modelperm-8880a96ad2313b07",
+    "object": "model_permission",
+    "created": 1790936051,
+    "allow_create_engine": false,
+    "allow_sampling": true,
+    "allow_logprobs": true,
+    "allow_search_indices": false,
+    "allow_view": true,
+    "allow_fine_tuning": false,
+    "organization": "*",
+    "group": null,
+    "is_blocking": false
+   }
+  ]
+ },
+ "template": "deepseek",
+ "tol": 0.05,
+ "best_known_before": {
+  "prefill_32768": 2848,
+  "decode_C1": 63.7
+ },
+ "server_args": {
+  "max_running_requests": null,
+  "max_total_num_tokens": null,
+  "chunked_prefill_size": null,
+  "kv_cache_dtype": null,
+  "context_length": 65536,
+  "mem_fraction_static": null,
+  "max_mamba_cache_size": null
+ },
+ "prefill": {
+  "8192": {
+   "median": 575.2,
+   "min": 566.2,
+   "max": 575.6,
+   "n": 3,
+   "all": [
+    566.2,
+    575.2,
+    575.6
+   ]
+  },
+  "32768": {
+   "median": 765.5,
+   "min": 759.2,
+   "max": 770.6,
+   "n": 3,
+   "all": [
+    759.2,
+    765.5,
+    770.6
+   ]
+  }
+ },
+ "decode": {
+  "C1": {
+   "aggregate": {
+    "median": 15.55,
+    "min": 15.51,
+    "max": 15.59,
+    "n": 2,
+    "all": [
+     15.51,
+     15.59
+    ]
+   },
+   "per_stream_mean": {
+    "median": 15.54,
+    "min": 15.5,
+    "max": 15.58,
+    "n": 2,
+    "all": [
+     15.5,
+     15.58
+    ]
+   },
+   "rounds": [
+    {
+     "aggregate": 15.51,
+     "per_stream_mean": 15.5,
+     "per_stream_min": 15.5,
+     "tokens": 1714,
+     "finish": [
+      "stop"
+     ],
+     "ttft_max": 1.13,
+     "streams": [
+      {
+       "t0": 68187.617625866,
+       "first": 68188.745325148,
+       "last": 68299.287373386,
+       "tokens": 1714,
+       "finish": "stop",
+       "response": "Here is a detailed, well-structured explanation of the history of the printing press.\n\n---\n\n### A Revolution in Communication: The History of the Printing Press\n\nThe printing press is one of the most influential inventions in human history. More than just a machine, it was the catalyst for a profound transformation in how knowledge was created, shared, and consumed. Its development democratized information, fueled the Renaissance, enabled the Reformation, and laid the groundwork for the modern world. The story of the printing press is a journey from painstaking manual creation to mass production, a shift that irrevocably altered the course of civilization.\n\n#### 1. The World Before Print: The Age of the Scribe\n\nTo understand the revolutionary impact of the printing press, one must first appreciate the world it replaced. For millennia, the written word was a luxury. In Europe, before the 15th century, books were produced by hand, primarily by scribes in monasteries.\n\n- **The Process:** A single scribe would spend months, sometimes years, meticulously copying a single book onto parchment or vellum (prepared animal skins). This process was incredibly labor-intensive, expensive, and prone to human error.\n- **The Product:** The resulting books were rare, precious, and often chained to reading desks in libraries. They were the exclusive property of the wealthy, the nobility, and the Church. The vast majority of the population was illiterate and had no access to written knowledge.\n- **Existing Technologies:** While woodblock printing existed in East Asia (notably in China for centuries) and was used for textiles and later for playing cards and religious images in Europe, it was not a practical system for printing lengthy texts. Each page had to be carved individually, a time-consuming process that made correcting errors or reprinting a book difficult.\n\nThis system of manual reproduction acted as a bottleneck on the spread of ideas. Knowledge was static, controlled, and scarce.\n\n#### 2. The Dawn of a New Era: Gutenberg's Masterpiece\n\nThe pivotal moment in the history of printing occurred in the mid-15th century in Mainz, Germany, with a goldsmith named **Johannes Gutenberg**. While he did not \"invent\" printing from scratch, he brilliantly synthesized and perfected several existing technologies into a single, revolutionary system.\n\nGutenberg's key innovations were:\n\n1.  **Movable Type:** This was the core of his invention. Instead of carving an entire page, Gutenberg created individual, reusable metal blocks for each letter, number, and punctuation mark. These were made from a durable alloy of lead, tin, and antimony. This meant that type could be arranged to form a page, printed, and then disassembled and reused for a different page. This was the key to mass production.\n2.  **The Printing Press:** Gutenberg adapted the design of existing screw presses, which were used for pressing grapes and olives. He created a machine that could apply a firm, even pressure to a sheet of paper placed over inked type, ensuring a clean and consistent impression.\n3.  **Oil-Based Ink:** Standard water-based ink used by scribes would smudge on metal type. Gutenberg developed a new, oil-based ink that was thick and sticky enough to adhere to the metal letters and transfer cleanly to the paper.\n4.  **The Hand Mould:** He created a special mould that allowed for the rapid and precise casting of thousands of identical metal letters.\n\nGutenberg's most famous work, the **Gutenberg Bible** (c. 1455), demonstrated the power of his system. It was a beautiful, high-quality book produced in a quantity that was previously unimaginable. Though Gutenberg himself did not become wealthy from his invention, his system spread with incredible speed.\n\n#### 3. The Spread of the Press and Its Immediate Impact\n\nFrom Mainz, the technology of the printing press spread rapidly across Europe. By 1500, printing shops had been established in over 250 cities across the continent, from Rome and Paris to London and Krakow. This period, known as the \"incunabula\" (cradle) period, saw the printing of millions of books.\n\nThe immediate effects were staggering:\n\n- **The Price of Knowledge Plummeted:** A printed book cost a fraction of a hand-copied manuscript. For the first time, books became affordable for the middle classes, students, and merchants.\n- **The Spread of Literacy:** As books became more accessible, the desire and need to read them grew. Literacy rates began to climb, creating a more informed and engaged public.\n- **Standardization of Language:** Printers helped standardize vernacular languages (like English, French, and German) by choosing a single dialect for their publications. This contributed to the rise of national identities.\n- **The Renaissance and Humanism:** The printing press was the engine of the Renaissance. It allowed the works of ancient Greek and Roman thinkers, as well as contemporary humanist scholars like Erasmus, to be disseminated widely, fueling a rebirth of art, science, and philosophy.\n- **The Reformation:** This is perhaps the most dramatic example of the press's power. In 1517, Martin Luther's *Ninety-five Theses* were printed and distributed across Germany in a matter of weeks. The printing press allowed his ideas to spread far beyond the reach of the Church's authority, sparking the Protestant Reformation and permanently fracturing the religious unity of Europe.\n\n#### 4. The Long Evolution: From Gutenberg to the Industrial Age\n\nFor over 300 years, the basic design of the printing press remained largely unchanged. It was still a manual, wooden screw press operated by hand. However, the 19th century brought a wave of industrial innovation that transformed printing once again.\n\n- **The Iron Press (c. 1800):** The wooden press was replaced by a much stronger and more durable iron press, allowing for larger print runs and greater pressure.\n- **The Steam-Powered Press (1814):** *The Times* of London commissioned a steam-powered press that could print over 1,000 pages per hour, a massive leap from the 250 pages per hour of a hand press.\n- **The Rotary Press (1843):** Invented by Richard March Hoe, this press used a rotating cylinder to print on a continuous roll of paper, dramatically increasing speed and efficiency. This made the mass-circulation daily newspaper possible.\n- **Linotype and Monotype (1880s):** These machines mechanized the process of setting type, casting entire lines of text (Linotype) or individual characters (Monotype) from molten metal. This eliminated the slow, manual work of picking individual letters.\n- **Offset Printing (1904):** This technique, where an inked image is transferred from a plate to a rubber blanket and then to the printing surface, became the standard for high-volume commercial printing.\n\n#### 5. The Digital Revolution and the Legacy of Print\n\nThe 20th and 21st centuries saw the printing press evolve from an analog mechanical device to a digital one. The invention of the photocopier, the laser printer, and desktop publishing software put the power of printing directly into the hands of individuals.\n\nToday, we are in the midst of a new communication revolution with the rise of the internet and digital media. Yet, the legacy of the printing press is all around us. It:\n\n- **Created the Concept of \"Mass Media\":** It was the first technology to allow for the widespread, identical dissemination of information to a large audience.\n- **Established the Public Sphere:** It created a space for public debate and opinion, independent of traditional authorities.\n- **Preserved and Spread Knowledge:** It acted as a vast, permanent, and accessible memory for humanity, accelerating scientific progress and cultural exchange.\n- **Shaped Modern Society:** From the novel to the newspaper, from the pamphlet to the textbook, the formats and institutions of modern life were built upon the foundation of print.\n\nIn conclusion, the history of the printing press is the history of the democratization of knowledge. It began as a clever machine in a German workshop and became a global force that toppled empires, sparked new religions, and empowered individuals. While the tools of communication continue to evolve, the fundamental principle established by Gutenberg\u2014that ideas can be reproduced and shared on a massive scale\u2014remains the cornerstone of our modern, information-driven world.",
+       "prompt_tokens": 23,
+       "prompt_sha256": "73d493a8d1ddf9595d3418e6c751bddec3ad0c4ef600f9812de0ea8f429c9523",
+       "delivered_timestamps": 1714
+      }
+     ]
+    },
+    {
+     "aggregate": 15.59,
+     "per_stream_mean": 15.58,
+     "per_stream_min": 15.58,
+     "tokens": 2067,
+     "finish": [
+      "stop"
+     ],
+     "ttft_max": 0.9,
+     "streams": [
+      {
+       "t0": 68299.290838894,
+       "first": 68300.192917632,
+       "last": 68432.801442911,
+       "tokens": 2067,
+       "finish": "stop",
+       "response": "# TCP Congestion Control: A Detailed Explanation\n\n## 1. Introduction and Motivation\n\nTCP congestion control is the set of algorithms that govern how much data a TCP sender can have in flight (unacknowledged) at any given time. Its purpose is to prevent the sender from overwhelming the network, which would cause packet loss, excessive queuing delay, and potentially congestion collapse\u2014a condition where throughput drops dramatically because most transmitted packets are dropped before reaching the receiver.\n\nThe core idea is simple: the sender maintains a **congestion window (cwnd)**, and the amount of unacknowledged data it may send is limited by:\n\n```\nEffectiveWindow = min(cwnd, rwnd)\n```\n\nwhere `rwnd` is the receiver's advertised window (flow control). Congestion control adjusts `cwnd` dynamically based on perceived network conditions.\n\n---\n\n## 2. The Four Standard Algorithms (RFC 5681)\n\nClassical TCP congestion control consists of four intertwined algorithms: **slow start**, **congestion avoidance**, **fast retransmit**, and **fast recovery**.\n\n### 2.1 Slow Start\n\nWhen a connection begins (or restarts after a timeout), the sender does not know the network's capacity. Slow start ramps up exponentially:\n\n- Initialize `cwnd = 1 MSS` (or the more modern `initcwnd = 10 MSS`, RFC 6928).\n- For each ACK that acknowledges new data, increase `cwnd` by up to 1 MSS.\n- This yields a doubling of `cwnd` roughly every RTT.\n\nSlow start continues until either:\n- `cwnd` reaches the **slow start threshold (`ssthresh`)**, at which point the sender transitions to congestion avoidance, or\n- A loss is detected.\n\n### 2.2 Congestion Avoidance\n\nOnce `cwnd \u2265 ssthresh`, growth becomes linear (additive increase):\n\n- Increase `cwnd` by approximately `MSS * MSS / cwnd` bytes per ACK, or equivalently by 1 MSS per RTT.\n- This is the \"additive increase\" half of **AIMD** (Additive Increase, Multiplicative Decrease).\n\nThe AIMD principle is what gives TCP its stability: multiple flows sharing a bottleneck converge to a fair equilibrium.\n\n### 2.3 Fast Retransmit\n\nWhen the sender receives **three duplicate ACKs** (indicating a single packet was lost but later packets arrived), it retransmits the missing segment immediately without waiting for the retransmission timer to expire. This saves roughly one RTT of idle time.\n\n### 2.4 Fast Recovery\n\nAfter a fast retransmit, TCP enters fast recovery rather than returning to slow start:\n\n- `ssthresh = max(FlightSize / 2, 2 * MSS)`\n- `cwnd = ssthresh + 3 * MSS` (accounting for the three packets that left the network)\n- For each additional duplicate ACK, `cwnd += MSS` (inflating the window to allow new transmissions).\n- When the ACK for the retransmitted segment arrives, `cwnd = ssthresh` and the sender returns to congestion avoidance.\n\n### 2.5 Timeout Behavior\n\nIf the retransmission timer expires (severe congestion, or ACKs are entirely lost), TCP:\n\n- Sets `ssthresh = max(FlightSize / 2, 2 * MSS)`\n- Resets `cwnd = 1 MSS`\n- Re-enters slow start\n\nThis is the \"multiplicative decrease\" step.\n\n---\n\n## 3. The AIMD Sawtooth\n\nThe resulting `cwnd` trajectory looks like a sawtooth:\n\n```\ncwnd\n  |        /\\          /\\          /\\\n  |       /  \\        /  \\        /  \\\n  |      /    \\      /    \\      /    \\\n  |     /      \\    /      \\    /      \\\n  |    /        \\  /        \\  /        \\\n  |___/__________\\/__________\\/__________\\___ time\n      slow       loss        loss        loss\n      start\n```\n\nEach cycle: exponential growth \u2192 linear growth \u2192 halve on loss \u2192 repeat.\n\n---\n\n## 4. Refinements and Modern Variants\n\n### 4.1 TCP Reno vs. Tahoe\n\n- **Tahoe**: On any loss, drop to `cwnd = 1` and slow start.\n- **Reno**: Adds fast retransmit and fast recovery, avoiding the full reset for single losses.\n\n### 4.2 TCP NewReno (RFC 6582)\n\nReno's fast recovery handles only one loss per window. NewReno tracks the \"recovery point\" (the highest sequence number outstanding when recovery began) and stays in fast recovery until all data up to that point is acknowledged, retransmitting each lost segment as partial ACKs arrive.\n\n### 4.3 TCP SACK (Selective Acknowledgment, RFC 2018)\n\nSACK lets the receiver report exactly which blocks were received, so the sender can retransmit only the missing segments in one RTT. This is especially valuable on links with high bandwidth-delay products.\n\n### 4.4 TCP CUBIC (RFC 9438)\n\nDefault on Linux since 2.6.19. Instead of linear growth, CUBIC uses a cubic function of time since the last loss:\n\n```\nW(t) = C * (t - K)^3 + W_max\n```\n\nwhere `K = cbrt(W_max * \u03b2 / C)`. Properties:\n- **Scalable**: grows quickly when far from `W_max`, slowly near it.\n- **RTT-fair**: growth depends on time, not RTT, reducing RTT bias.\n- **Friendly**: behaves like Reno for small windows.\n\n### 4.5 BBR (Bottleneck Bandwidth and RTT)\n\nGoogle's BBR (2016) abandons loss-based control. It estimates:\n- **BtlBw**: bottleneck bandwidth (max delivery rate observed)\n- **RTprop**: minimum RTT observed\n\nIt cycles through phases (Startup, Drain, ProbeBW, ProbeRTT) to keep the sending rate near `BtlBw * RTprop`. BBR performs well on lossy links (e.g., wireless) where loss-based TCP underutilizes capacity.\n\n### 4.6 Other Variants\n\n- **Vegas / Veno**: RTT-based, aim to keep queueing delay low.\n- **Westwood / Westwood+**: Estimate bandwidth from ACK rate; good for wireless.\n- **Hybla**: Compensates for high RTT.\n- **DCTCP**: For data centers; uses ECN to react proportionally to congestion.\n- **TCP Prague / L4S**: Low-latency, low-loss, scalable throughput (RFC 9331).\n\n---\n\n## 5. Supporting Mechanisms\n\n### 5.1 RTT Estimation (RFC 6298)\n\n```\nSRTT    = (1 - \u03b1) * SRTT + \u03b1 * RTT_sample      (\u03b1 = 1/8)\nRTTVAR  = (1 - \u03b2) * RTTVAR + \u03b2 * |SRTT - RTT_sample|   (\u03b2 = 1/4)\nRTO     = SRTT + max(G, K * RTTVAR)            (K = 4)\n```\n\nwith exponential backoff on repeated timeouts.\n\n### 5.2 Explicit Congestion Notification (ECN, RFC 3168)\n\nRouters mark packets instead of dropping them. The receiver echoes the mark via the ECE flag; the sender responds as if a loss occurred (or, in DCTCP, proportionally). ECN avoids unnecessary retransmissions.\n\n### 5.3 Pacing\n\nModern stacks (Linux `fq`, `fq_codel`) pace packets to smooth bursts, reducing queue pressure and improving fairness.\n\n---\n\n## 6. Why It Works: The Control-Theoretic View\n\nTCP congestion control is a **distributed feedback control system**:\n\n- **Plant**: the network (bottleneck links, queues).\n- **Sensor**: ACKs (and loss/ECN signals).\n- **Actuator**: `cwnd` / sending rate.\n- **Controller**: AIMD or CUBIC/BBR laws.\n\nAIMD's key property: if two flows share a link, additive increase moves them toward fairness, and multiplicative decrease preserves the ratio, so the system converges to equal shares. This is the classic **Chiu\u2013Jain** result.\n\n---\n\n## 7. Practical Summary Table\n\n| Phase | Trigger | cwnd Behavior |\n|---|---|---|\n| Slow start | Connection start / timeout | Exponential (\u00d72 per RTT) |\n| Congestion avoidance | `cwnd \u2265 ssthresh` | Linear (+1 MSS per RTT) |\n| Fast retransmit | 3 dup ACKs | Retransmit lost segment |\n| Fast recovery | After fast retransmit | Halve `ssthresh`, inflate `cwnd` |\n| Timeout | RTO expiry | `cwnd = 1`, slow start |\n\n---\n\n## 8. Key Takeaways\n\n1. TCP congestion control balances **efficiency** (using available bandwidth) against **stability** (avoiding collapse).\n2. **AIMD** is the foundational law; **slow start** bootstraps; **fast retransmit/recovery** mitigate single losses.\n3. Modern variants (**CUBIC**, **BBR**, **DCTCP**) address specific weaknesses: RTT bias, lossy links, and data-center latency.\n4. Supporting mechanisms\u2014**RTT estimation**, **SACK**, **ECN**, **pacing**\u2014make the algorithms practical at scale.\n5. The design is fundamentally a **distributed control loop** whose emergent behavior is fair bandwidth sharing across competing flows.",
+       "prompt_tokens": 22,
+       "prompt_sha256": "67f567c4e323e6c4c59683895aca6ba2cf567c65dffe1f28b39d6354b4185431",
+       "delivered_timestamps": 2067
+      }
+     ]
+    }
+   ]
+  },
+  "C2": {
+   "aggregate": {
+    "median": 17.745,
+    "min": 17.44,
+    "max": 18.05,
+    "n": 2,
+    "all": [
+     18.05,
+     17.44
+    ]
+   },
+   "per_stream_mean": {
+    "median": 9.29,
+    "min": 9.22,
+    "max": 9.36,
+    "n": 2,
+    "all": [
+     9.22,
+     9.36
+    ]
+   },
+   "rounds": [
+    {
+     "aggregate": 18.05,
+     "per_stream_mean": 9.22,
+     "per_stream_min": 9.08,
+     "tokens": 2951,
+     "finish": [
+      "stop"
+     ],
+     "ttft_max": 2.62,
+     "streams": [
+      {
+       "t0": 68432.807247492,
+       "first": 68435.427628917,
+       "last": 68591.764831427,
+       "tokens": 1421,
+       "finish": "stop",
+       "response": "Here is a detailed, well-structured explanation of the history of the printing press.\n\n---\n\n### The History of the Printing Press: A Revolution in Human Communication\n\nThe printing press is arguably one of the most influential inventions in human history. More than just a machine, it was a catalyst for profound social, political, and intellectual change. Its development democratized knowledge, fueled the Renaissance and the Reformation, and laid the groundwork for the modern world. The story of the printing press is a journey from painstaking manual creation to the mass production of ideas.\n\n#### 1. The World Before the Press: The Age of the Scribe\n\nBefore the invention of the printing press, the dissemination of information was a slow, laborious, and expensive process. In Europe, this task fell primarily to scribes, usually monks in monasteries.\n\n- **The Process:** A scribe would painstakingly copy texts by hand onto parchment (made from animal skin) or vellum. This process could take months or even years for a single book, such as a Bible.\n- **The Result:** Books were incredibly rare and valuable, often chained to reading desks in libraries. They were the exclusive property of the wealthy, the nobility, and the Church. This created a society where literacy was low and the control of information was centralized in the hands of a powerful few.\n- **Existing Technologies:** While woodblock printing existed in East Asia (notably in China for centuries), it was not well-suited for the alphabetic languages of Europe. Carving a full page of text into a wooden block was time-consuming and impractical for producing a variety of texts.\n\n#### 2. The Dawn of a New Era: Gutenberg's Masterpiece\n\nThe pivotal moment in the history of printing occurred in the mid-15th century in Mainz, Germany, with a goldsmith named **Johannes Gutenberg**. While he did not \"invent\" printing from scratch, he brilliantly synthesized and perfected several existing technologies into a single, revolutionary system.\n\nGutenberg's key innovations were:\n\n- **Movable Type:** This was the core of his invention. Instead of carving an entire page, Gutenberg created individual, reusable metal blocks, each with a single letter, number, or punctuation mark. These were made from a durable alloy of lead, tin, and antimony. This meant that a printer could assemble a page of text, print it, disassemble the type, and reuse the individual letters for a completely different page.\n- **The Printing Press:** Gutenberg adapted the design of the screw press, already used for pressing grapes and olives, to apply firm, even pressure to a sheet of paper placed over inked type. This ensured a clean, consistent impression.\n- **Oil-Based Ink:** Standard water-based inks used by scribes would smudge on metal type. Gutenberg developed a new, oil-based ink that was thick enough to adhere to the metal letters and transfer cleanly to the paper.\n- **The Hand Mould:** He created a special mould that allowed for the rapid and precise casting of thousands of identical metal letters.\n\nGutenberg's most famous work, the **Gutenberg Bible** (c. 1455), demonstrated the power of his invention. It was of a quality that rivaled the finest handwritten manuscripts, but it could be produced in far greater quantities and at a fraction of the cost.\n\n#### 3. The Spread of the Printed Word\n\nGutenberg's invention did not stay in Mainz for long. The immense potential of the printing press was quickly recognized, and the technology spread like wildfire across Europe.\n\n- **Rapid Expansion:** By 1500, printing presses were operating in over 250 cities across Europe, from Rome and Paris to London and Krakow. This period, known as the \"incunabula\" (cradle) period, saw the printing of millions of books.\n- **The Printing Revolution:** The spread of the press created a new industry. Printers became important figures in society, and cities like Venice and Nuremberg became major publishing centers. The price of books plummeted, and for the first time, they became accessible to a broader segment of the population, including merchants, scholars, and the emerging middle class.\n\n#### 4. The Profound Impact of the Printing Press\n\nThe consequences of this new technology were far-reaching and transformative.\n\n- **The Renaissance and Humanism:** The press allowed for the rapid and accurate dissemination of classical Greek and Roman texts, which had been rediscovered during the Renaissance. This fueled the intellectual movement of Humanism, which emphasized the potential and achievements of humankind.\n- **The Protestant Reformation:** This is perhaps the most dramatic example of the press's power. Martin Luther's 95 Theses, a critique of the Catholic Church, were quickly printed and distributed across Germany and beyond. The printing press allowed his ideas to spread with a speed and scale that was previously unimaginable, directly challenging the authority of the Church and leading to a permanent schism in Western Christianity.\n- **The Scientific Revolution:** Scientists like Copernicus, Galileo, and Newton could now publish their findings and share them with a wide audience. This allowed for the verification and building upon of previous work, accelerating the pace of scientific discovery. The free exchange of ideas became the foundation of modern science.\n- **Standardization of Language:** As books became more common, regional dialects began to fade in favor of standardized national languages. The press helped to fix spelling and grammar, contributing to the formation of a shared cultural identity.\n- **Literacy and Education:** The increased availability of books created a greater demand for literacy. It spurred the growth of schools and universities and fostered a more informed and engaged public.\n\n#### 5. The Evolution of the Press\n\nThe printing press itself continued to evolve over the centuries.\n\n- **The 19th Century:** The Industrial Revolution brought steam-powered presses, which could print thousands of pages per hour. The invention of the rotary press, which used continuous rolls of paper instead of individual sheets, further increased speed and efficiency. This era saw the rise of the mass-circulation newspaper.\n- **The 20th Century:** The 20th century introduced offset printing, a method that uses a rubber cylinder to transfer the image from the printing plate to the paper. This became the standard for high-volume commercial printing. Later, digital printing technologies, such as laser and inkjet printers, allowed for on-demand, short-run printing directly from a computer file.\n\n#### Conclusion: A Legacy of Information\n\nThe history of the printing press is the story of how information became a public good rather than a private treasure. From Gutenberg's ingenious synthesis of movable type and the screw press to today's digital printers, the core principle remains the same: the ability to replicate and share ideas on a massive scale. The printing press broke the monopoly on knowledge, empowered individuals to challenge authority, and created the interconnected, information-driven world we live in today. It was, and remains, a true engine of human progress.",
+       "prompt_tokens": 23,
+       "prompt_sha256": "73d493a8d1ddf9595d3418e6c751bddec3ad0c4ef600f9812de0ea8f429c9523",
+       "delivered_timestamps": 1421
+      },
+      {
+       "t0": 68432.806936634,
+       "first": 68435.427722836,
+       "last": 68598.92358454,
+       "tokens": 1530,
+       "finish": "stop",
+       "response": "Here is a detailed, well-structured explanation of how a jet engine works.\n\n---\n\n### How a Jet Engine Works: The Principle of Thrust\n\nAt its core, a jet engine is a machine designed to convert the chemical energy stored in fuel into kinetic energy in the form of a high-speed exhaust jet. This process generates thrust, propelling an aircraft forward. The engine accomplishes this by harnessing Newton's Third Law of Motion: for every action, there is an equal and opposite reaction. The engine forcefully expels mass (hot gases) backward, and this action pushes the engine\u2014and the aircraft attached to it\u2014forward.\n\nWhile there are several types of jet engines, the most common for commercial airliners is the **turbofan engine**. We will use it as our primary example, as it elegantly demonstrates the core principles. The operation can be broken down into five key sections, often remembered by the acronym **\"Suck, Squeeze, Bang, Blow.\"**\n\n---\n\n### The Five Core Sections of a Turbofan Engine\n\n#### 1. The Intake (Suck)\n\nThe process begins at the front of the engine with the **intake**. This section includes the **fan**, a large set of fan blades that look like a propeller.\n\n- **Function:** The fan's primary job is to draw a massive volume of air into the engine. It acts like a giant vacuum, pulling air in from the atmosphere.\n- **The Critical Split:** The air that enters is immediately divided into two streams:\n    - **Primary Air (Core Air):** A smaller portion (around 10-20%) is directed into the core of the engine, where it will be mixed with fuel and burned.\n    - **Secondary Air (Bypass Air):** The vast majority (80-90%) bypasses the core entirely. This air is simply accelerated by the fan and shot out the back of the engine. This bypass air is responsible for the majority of the thrust in a modern turbofan engine, especially at lower speeds, and also helps to make the engine much quieter.\n\n#### 2. The Compressor (Squeeze)\n\nThe primary air that entered the core now moves into the **compressor**. This section is made up of a series of alternating rotating blades (rotors) and stationary blades (stators).\n\n- **Function:** The compressor's job is to squeeze the air, dramatically increasing its pressure. As the air passes through each stage of the compressor, it is compressed more and more. The pressure can increase by over 40 times by the time the air reaches the end of the compressor.\n- **Why is this important?** Compressing the air serves two purposes:\n    1.  It increases the density of the air, allowing more oxygen molecules to be packed into the same volume. This is crucial for efficient combustion.\n    2.  It raises the temperature of the air significantly (to several hundred degrees Celsius) due to the laws of thermodynamics (compressing a gas heats it up).\n\n#### 3. The Combustion Chamber (Bang)\n\nThe highly compressed, hot air now enters the **combustion chamber**. Here, fuel is injected and mixed with the air.\n\n- **Function:** This is where the \"bang\" happens. A continuous, controlled explosion occurs as the fuel-air mixture is ignited. The combustion process intensely heats the gases, causing them to expand rapidly and violently. The temperature can reach over 1,500\u00b0C (2,700\u00b0F).\n- **Key Detail:** The combustion is not a single explosion but a constant, steady flame. The design of the combustion chamber ensures that the flame is stable and does not blow itself out.\n\n#### 4. The Turbine (Blow)\n\nThe super-heated, high-pressure gases from the combustion chamber now blast into the **turbine**. The turbine is another set of rotating and stationary blades, similar in appearance to the compressor but designed to do the opposite job.\n\n- **Function:** The turbine extracts energy from the hot, expanding gases. As the gases rush past the turbine blades, they cause the turbine to spin at incredible speed.\n- **The Self-Sustaining Cycle:** The turbine is connected by a central shaft to the compressor and the fan at the front. So, the energy extracted by the turbine is used to turn the compressor and the fan. This is the genius of the jet engine: it is a self-sustaining cycle. The engine's own exhaust provides the power to suck in more air and compress it, which in turn creates more exhaust. Once started, the engine can run continuously as long as it has fuel.\n\n#### 5. The Exhaust (Thrust)\n\nAfter passing through the turbine, the gases have lost much of their energy, but they are still at a very high pressure and temperature. They are now expelled through the **exhaust nozzle** at the rear of the engine.\n\n- **Function:** The nozzle is shaped to accelerate these gases to a very high speed. This high-velocity jet of hot gas is the \"action\" that creates the \"reaction\" of forward thrust.\n- **Total Thrust:** The total thrust of a turbofan engine is the sum of two parts:\n    1.  The thrust from the hot, fast-moving core exhaust.\n    2.  The thrust from the massive volume of cooler, slower-moving bypass air.\n\n---\n\n### A Simplified Analogy: The Jet Engine as a Rocket on a Leash\n\nImagine a rocket engine strapped to a sturdy cart. The rocket fires, creating thrust that pushes the cart forward. Now, imagine that the cart is connected by a strong chain to a giant fan on its front. As the cart moves forward, the fan spins, drawing in air. This air is then channeled into the rocket's intake to provide the oxygen it needs to burn its fuel.\n\nThe jet engine works on a similar principle, but it's a closed loop:\n1.  The **turbine** is like the rocket's exhaust, providing the power.\n2.  The **shaft** is the chain connecting the turbine to the **compressor** and **fan**.\n3.  The **compressor** and **fan** are the giant fan, using the power from the turbine to draw in and compress the air needed for the \"rocket\" (combustion chamber) to burn.\n\nThe engine is essentially a rocket that carries its own \"air-breathing\" system, powered by its own exhaust.\n\n### Summary Table\n\n| Section | Nickname | Function | Key Principle |\n| :--- | :--- | :--- | :--- |\n| **Intake** | Suck | Draws air into the engine. | The fan creates a pressure difference to pull in air. |\n| **Compressor** | Squeeze | Compresses the core air to high pressure and temperature. | Increasing pressure packs more oxygen for combustion. |\n| **Combustion Chamber** | Bang | Burns fuel with the compressed air, creating hot, expanding gas. | Chemical energy is converted into thermal energy. |\n| **Turbine** | Blow | Extracts energy from the hot gas to turn the compressor and fan. | The expanding gas does work on the turbine blades, causing them to spin. |\n| **Exhaust** | Thrust | Expels the hot gas at high speed to create forward thrust. | Newton's Third Law: Action (expelling mass) creates an equal and opposite reaction (thrust). |",
+       "prompt_tokens": 22,
+       "prompt_sha256": "dde03e092498c60056cd1882d87583c9cd44eb47d1370874bf25848e7683c0ca",
+       "delivered_timestamps": 1530
+      }
+     ]
+    },
+    {
+     "aggregate": 17.44,
+     "per_stream_mean": 9.36,
+     "per_stream_min": 8.88,
+     "tokens": 3395,
+     "finish": [
+      "stop"
+     ],
+     "ttft_max": 2.76,
+     "streams": [
+      {
+       "t0": 68598.927076135,
+       "first": 68601.687119827,
+       "last": 68796.402158061,
+       "tokens": 1918,
+       "finish": "stop",
+       "response": "# TCP Congestion Control: A Detailed Explanation\n\n## 1. Introduction and Motivation\n\nTCP congestion control is the set of algorithms that govern how much data a TCP sender can have in flight (unacknowledged) at any given time. Its purpose is to prevent the sender from overwhelming the network, while still using available bandwidth efficiently. Without it, the early Internet suffered from **congestion collapse**: as links saturated, queues filled, packets dropped, retransmissions added load, and throughput could fall by orders of magnitude.\n\nThe core idea is simple: the sender maintains a **congestion window (cwnd)**, measured in bytes (or segments), and limits the amount of unacknowledged data to:\n\n```\nmin(cwnd, rwnd)\n```\n\nwhere `rwnd` is the receiver's advertised window (flow control). Congestion control adapts `cwnd` based on feedback inferred from ACKs and losses.\n\n---\n\n## 2. The Four Standard Phases (RFC 5681)\n\nClassical TCP congestion control (Reno, and the basis for most variants) operates in four interleaved phases.\n\n### 2.1 Slow Start\n\n- Initial `cwnd` is small: typically 1\u201310 segments (RFC 5681 allows up to 4 \u00d7 MSS; modern stacks often use 10, the \"initcwnd\" value).\n- For every ACK that acknowledges new data, `cwnd` increases by roughly one MSS. This produces **exponential growth** (doubling per RTT).\n- Slow start ends when:\n  - `cwnd` reaches `ssthresh` (slow start threshold), transitioning to congestion avoidance, or\n  - a loss is detected.\n\nThe name is historical: it starts small, but growth is actually exponential.\n\n### 2.2 Congestion Avoidance\n\n- Once `cwnd \u2265 ssthresh`, growth becomes **linear**: roughly +1 MSS per RTT (additive increase).\n- The common implementation is `cwnd += MSS * MSS / cwnd` per ACK, which yields ~1 MSS growth per RTT.\n- This is the \"AI\" in **AIMD** (Additive Increase, Multiplicative Decrease).\n\n### 2.3 Fast Retransmit\n\n- When the sender receives **three duplicate ACKs** for the same sequence number, it infers a single packet loss (not reordering) and retransmits the missing segment immediately, without waiting for a retransmission timeout (RTO).\n- This saves roughly one RTO of idle time.\n\n### 2.4 Fast Recovery\n\n- On entering fast recovery, the sender sets:\n  - `ssthresh = max(flight_size / 2, 2 * MSS)`\n  - `cwnd = ssthresh + 3 * MSS` (accounting for the three segments that left the network)\n- Each additional duplicate ACK inflates `cwnd` by 1 MSS (to allow new data to be sent).\n- When the retransmitted segment is ACKed, `cwnd` is deflated to `ssthresh` and the sender returns to congestion avoidance.\n\nThis is the **multiplicative decrease (MD)** half of AIMD.\n\n---\n\n## 3. Loss Detection and Timeouts\n\n- **Triple duplicate ACK** \u2192 fast retransmit (mild congestion signal).\n- **RTO expiration** \u2192 severe congestion signal. The sender:\n  - Sets `ssthresh = max(flight_size / 2, 2 * MSS)`\n  - Resets `cwnd = 1 MSS` (or `initcwnd`)\n  - Re-enters slow start.\n- RTO is computed from smoothed RTT (SRTT) and RTT variance (RTTVAR) per RFC 6298, with exponential backoff on repeated timeouts.\n\n---\n\n## 4. The AIMD Sawtooth\n\nPlotting `cwnd` over time yields the classic **sawtooth**:\n\n1. Linear climb during congestion avoidance.\n2. Sharp halving on loss.\n3. Linear climb again.\n\nThis behavior is provably stable and fair: multiple AIMD flows converge to equal share of a bottleneck link (Chiu\u2013Jain result).\n\n---\n\n## 5. Key Variants and Their Improvements\n\n### 5.1 Tahoe\nOriginal: slow start + congestion avoidance + fast retransmit. On any loss, `cwnd` drops to 1.\n\n### 5.2 Reno\nAdds fast recovery. Halves `cwnd` on triple-duplicate ACK; drops to 1 on timeout. Still the reference implementation.\n\n### 5.3 NewReno (RFC 6582)\nImproves Reno's handling of **multiple losses in one window**. Uses a \"partial ACK\" mechanism: partial ACKs during recovery trigger retransmission of the next lost segment without exiting fast recovery, avoiding multiple halvings.\n\n### 5.4 SACK (RFC 2018) + FACK\nSelective ACKs let the receiver report exactly which blocks arrived. The sender can retransmit only the missing segments and estimate the true flight size, making recovery much more efficient on lossy links.\n\n### 5.5 Vegas\nUses RTT as a congestion signal rather than loss. Compares expected vs. actual throughput to keep queues small. Proactive rather than reactive, but unfair against Reno flows.\n\n### 5.6 CUBIC (RFC 9438)\nDefault on Linux since 2.6.19. Uses a **cubic function** of time since last loss:\n\n```\nW(t) = C * (t - K)^3 + W_max\n```\n\n- Grows fast when far from `W_max`, plateaus near it, then probes cautiously.\n- More scalable on high-BDP (bandwidth-delay product) links than Reno's linear growth.\n- Still loss-based, so it remains fair-ish with Reno.\n\n### 5.7 BBR (Bottleneck Bandwidth and RTT)\nGoogle's model-based approach. Estimates:\n- **BtlBw**: bottleneck bandwidth (from delivery rate).\n- **RTprop**: minimum RTT.\n\nOperates in cycles: Startup, Drain, ProbeBW, ProbeRTT. Aims to keep the bottleneck queue near-empty, reducing latency. Not loss-based, so it can be unfair to loss-based flows and is still evolving (BBRv2, BBRv3).\n\n### 5.8 Compound TCP, Hybla, Westwood, Veno\nVarious tweaks for high-BDP, wireless, or satellite links. Hybla and Westwood are common in long-fat-network contexts.\n\n---\n\n## 6. Supporting Mechanisms\n\n- **Delayed ACKs**: receiver waits up to ~200 ms or 2 segments before ACKing, reducing overhead but slowing cwnd growth.\n- **Appropriate Byte Counting (ABC)**: grows cwnd based on bytes ACKed, not ACK count, to avoid slow growth with delayed ACKs.\n- **Limited Transmit**: allows sending new data on the first two duplicate ACKs to keep the pipe full.\n- **ECN (RFC 3168)**: routers mark packets instead of dropping them; sender reacts like a loss but without retransmission, improving throughput and reducing latency.\n- **Pacing**: spreads sends over time to avoid bursts (used by BBR and modern stacks).\n- **ACK thinning / stretch ACKs**: handling ACKs that cover many segments.\n\n---\n\n## 7. Fairness and Convergence\n\n- **RTT fairness**: flows with shorter RTTs grow cwnd faster per unit time, gaining unfair share. CUBIC and BBR partially mitigate this.\n- **Reno fairness**: AIMD converges to equal rates for flows sharing a bottleneck with the same RTT.\n- **TCP-friendliness**: new algorithms (e.g., BBR) are expected to coexist without starving Reno flows; this is an active research area.\n\n---\n\n## 8. Practical Notes\n\n- Linux exposes the algorithm via `net.ipv4.tcp_congestion_control` (e.g., `cubic`, `bbr`, `reno`).\n- `ss -i` shows cwnd, ssthresh, RTT, and retransmit stats per connection.\n- Tuning `initcwnd`, `initrwnd`, and enabling SACK/ECN can dramatically affect performance.\n- On modern high-BDP paths, CUBIC or BBR is usually preferred over Reno.\n\n---\n\n## 9. Summary\n\nTCP congestion control is a **closed-loop, feedback-driven** system:\n\n1. **Probe** for bandwidth (slow start, then congestion avoidance).\n2. **Detect** congestion via loss, delay, or ECN.\n3. **React** by reducing cwnd (multiplicative decrease) and recovering efficiently (fast retransmit/recovery, SACK, NewReno).\n4. **Repeat**, producing the AIMD sawtooth.\n\nFrom Tahoe to Reno to CUBIC to BBR, the evolution reflects a shift from purely loss-based, reactive control toward model-based, latency-aware control\u2014driven by the needs of high-speed, long-distance, and wireless networks.",
+       "prompt_tokens": 22,
+       "prompt_sha256": "67f567c4e323e6c4c59683895aca6ba2cf567c65dffe1f28b39d6354b4185431",
+       "delivered_timestamps": 1918
+      },
+      {
+       "t0": 68598.927454643,
+       "first": 68601.687030598,
+       "last": 68767.897331804,
+       "tokens": 1477,
+       "finish": "stop",
+       "response": "# The Life Cycle of Stars\n\nStars are not eternal. They are born, evolve through distinct phases, and eventually die\u2014often in spectacular fashion. The path a star takes depends almost entirely on one thing: **its mass**. Below is a detailed walkthrough of the stellar life cycle, from cold gas clouds to stellar remnants.\n\n---\n\n## 1. Birth: The Molecular Cloud Phase\n\nStars begin inside **molecular clouds**\u2014vast, cold (10\u201320 K), dense regions of interstellar gas and dust, composed mostly of hydrogen with traces of helium and heavier elements.\n\n- **Gravitational collapse:** A disturbance (such as a nearby supernova shockwave, collision with another cloud, or internal instability) causes a region of the cloud to begin collapsing under its own gravity.\n- **Fragmentation:** As the cloud collapses, it breaks into smaller clumps, each of which can form a separate star\u2014this is why stars often form in clusters.\n- **Protostar:** Each clump contracts, converting gravitational potential energy into heat. The core grows hotter and denser, forming a **protostar** still embedded in its natal dust cocoon.\n- **Accretion disk and jets:** Infalling material flattens into a rotating disk, while powerful bipolar jets (Herbig\u2013Haro objects) shoot outward along the rotation axis, carrying away excess angular momentum.\n\n**Duration:** Roughly 100,000 to a few million years\u2014brief compared to later stages.\n\n---\n\n## 2. Ignition: The Main Sequence\n\nWhen the protostar's core reaches about **10 million K**, hydrogen fusion ignites via the proton\u2013proton chain (or the CNO cycle in more massive stars). The star reaches **hydrostatic equilibrium**: outward radiation pressure balances inward gravity.\n\n- **Main sequence phase:** The star steadily fuses hydrogen into helium in its core. This is the longest and most stable phase of stellar life.\n- **Mass\u2013luminosity relation:** More massive stars are far brighter and burn through their fuel much faster.\n\n| Stellar Mass | Main Sequence Lifetime |\n|---|---|\n| 0.1 M\u2609 (red dwarf) | ~10 trillion years |\n| 1 M\u2609 (Sun-like) | ~10 billion years |\n| 15 M\u2609 | ~10 million years |\n| 40 M\u2609 | ~1 million years |\n\nThe Sun is currently about halfway through its main sequence phase.\n\n---\n\n## 3. Post-Main-Sequence Evolution\n\nOnce core hydrogen is exhausted, the star's evolution diverges sharply by mass.\n\n### A. Low-Mass Stars (\u22480.08\u20130.5 M\u2609): Red Dwarfs\n- Fuse hydrogen extremely slowly and may never leave the main sequence within the current age of the universe.\n- Eventually, they quietly contract into **helium white dwarfs** over trillions of years.\n\n### B. Intermediate-Mass Stars (\u22480.5\u20138 M\u2609): Sun-like Path\n1. **Subgiant \u2192 Red giant:** Core hydrogen runs out; the core contracts and heats while the outer envelope expands and cools. Hydrogen fusion continues in a shell around the inert helium core.\n2. **Helium flash and horizontal branch:** For stars below ~2 M\u2609, the helium core ignites explosively (helium flash), then settles into steady helium fusion (\u2192 carbon and oxygen).\n3. **Asymptotic giant branch (AGB):** Helium shell burning begins; the star becomes unstable, pulsates, and sheds its outer layers.\n4. **Planetary nebula:** The ejected envelope forms a glowing shell of ionized gas.\n5. **White dwarf:** The exposed core remains\u2014an Earth-sized, extremely dense object supported by **electron degeneracy pressure**. It slowly cools over billions of years toward a theoretical \"black dwarf.\"\n\n### C. High-Mass Stars (>8 M\u2609): The Supergiant Path\n1. **Red/blue supergiant:** These stars fuse heavier elements in successive shells\u2014helium \u2192 carbon \u2192 oxygen \u2192 neon \u2192 silicon \u2192 iron.\n2. **Onion-layer structure:** Each element burns in a shell, with the heaviest products in the core.\n3. **Iron core collapse:** Iron fusion consumes energy rather than releasing it. Once the iron core exceeds the **Chandrasekhar limit (~1.4 M\u2609)**, it collapses catastrophically in less than a second.\n4. **Core-collapse supernova:** The core implodes into a neutron star (or black hole), while the infalling outer layers rebound and explode, briefly outshining an entire galaxy. Heavy elements forged during the star's life and the explosion are scattered into space, enriching future generations of stars.\n\n---\n\n## 4. Stellar Remnants\n\n| Remnant | Formed From | Supported By | Mass Limit |\n|---|---|---|---|\n| **White dwarf** | Low/intermediate-mass stars | Electron degeneracy pressure | \u2264 1.4 M\u2609 (Chandrasekhar) |\n| **Neutron star** | Massive stars (8\u201320 M\u2609) | Neutron degeneracy pressure | ~1.4\u20132.2 M\u2609 (TOV limit) |\n| **Black hole** | Very massive stars (>20 M\u2609) | No known force; gravity wins | No upper limit |\n\n- **White dwarfs** can accrete matter from a companion and, if they exceed the Chandrasekhar limit, explode as **Type Ia supernovae**\u2014critical standard candles in cosmology.\n- **Neutron stars** may appear as **pulsars** (rapidly spinning, magnetized beacons) or magnetars.\n- **Black holes** are detected via X-ray binaries, gravitational waves (from mergers), and the Event Horizon Telescope.\n\n---\n\n## 5. Recycling and Cosmic Evolution\n\nThe life cycle of stars is a **cosmic recycling engine**:\n\n- Supernovae and stellar winds disperse heavy elements (carbon, oxygen, iron, gold) into the interstellar medium.\n- These enriched clouds collapse to form new stars with greater metallicity.\n- Each generation of stars thus seeds the next, gradually building the complex chemistry needed for planets\u2014and life.\n\n---\n\n## 6. Summary Diagram (Text Form)\n\n```\nMolecular Cloud\n      \u2193 (gravitational collapse)\n   Protostar\n      \u2193 (hydrogen fusion ignites)\n  Main Sequence\n      \u2193 (core H exhausted)\n \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\nLow/Intermediate Mass     High Mass\n      \u2193                        \u2193\n Red Giant \u2192 AGB          Red Supergiant\n      \u2193                        \u2193\nPlanetary Nebula         Core-Collapse Supernova\n      \u2193                        \u2193\n White Dwarf          Neutron Star / Black Hole\n```\n\n---\n\n## Key Takeaway\n\n**Mass is destiny.** A star's birth mass determines its luminosity, lifetime, fusion pathways, and ultimate fate\u2014whether it fades quietly as a white dwarf or dies violently as a supernova, leaving behind a neutron star or black hole. Every star's death enriches the cosmos, making the next generation of stars\u2014and planets\u2014possible.",
+       "prompt_tokens": 22,
+       "prompt_sha256": "c3e656f6dccc36b062ab3ef2ac4597916375e657cee2c7e2a0075577d70ac43c",
+       "delivered_timestamps": 1477
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "status": "RUNNING",
+ "prompt_seed": 1790936051,
+ "prefill_prompt_receipts": [
+  {
+   "tokens": 8192,
+   "rep": 0,
+   "prompt_sha256": "7f77955808f75fa3d291de8a32297d482fad629a3b806ad528cc5ba0ab6d6a9e",
+   "ttft_s": 14.469579312004498
+  },
+  {
+   "tokens": 8192,
+   "rep": 1,
+   "prompt_sha256": "726cbbb2cf21a0b20b84358f1e5ecb321c9c0ab75856286419bd2c2db02b25dd",
+   "ttft_s": 14.242179840992321
+  },
+  {
+   "tokens": 8192,
+   "rep": 2,
+   "prompt_sha256": "e340b6be370c84f7ecf09da7bce13f5211d630fccc87a41b33a29fb52b5afad2",
+   "ttft_s": 14.231297411999549
+  },
+  {
+   "tokens": 32768,
+   "rep": 0,
+   "prompt_sha256": "db8b7e4c48e46938c2b7f5488001ac2624c05e80790d157db1e55bccbbb5ddd6",
+   "ttft_s": 43.159197376007796
+  },
+  {
+   "tokens": 32768,
+   "rep": 1,
+   "prompt_sha256": "a85818dde76089e501639530f122d5c3b54924b200dfe55d0e7e33d10988ad8f",
+   "ttft_s": 42.80401302900282
+  },
+  {
+   "tokens": 32768,
+   "rep": 2,
+   "prompt_sha256": "01777a87e015027bbe58a3bf51207c95828de3c249ea77e57ae4d3ce9d8a7823",
+   "ttft_s": 42.52450680099719
+  }
+ ],
+ "gates": {
+  "prefill_8192": {
+   "value": 575.2,
+   "best_known": null,
+   "pass": true
+  },
+  "prefill_32768": {
+   "value": 765.5,
+   "best_known": 2848,
+   "pass": false
+  },
+  "decode_C1": {
+   "value": 15.55,
+   "best_known": 63.7,
+   "pass": false
+  }
+ }
+}

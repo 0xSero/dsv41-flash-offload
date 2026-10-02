@@ -1,0 +1,751 @@
+--- a/src/vllm_exl3/exl3.py
++++ b/src/vllm_exl3/exl3.py
+@@ -104,6 +104,144 @@
+ EXL3_SUFFIXES = ("trellis", "suh", "svh", "mcg", "mul1")
+ SWIGLU_LIMIT_DEFAULT = 10.0
+ TEMP_ROWS_FUSED = 2048
++# thor host-expert overlap: run the cold (host-RAM) expert launch on a side stream, concurrent with the hot launch.
++# Value = SMs given to the cold launch (multiple of 8; 0 = serial split launch). Needs XMOE_EXT=xmoe_flatns3d+.
++_EXL3_OVERLAP_DECODE = int(os.environ.get("EXL3_HOST_OVERLAP_SMS", "0") or 0)
++_EXL3_OVERLAP_PREFILL = int(os.environ.get("EXL3_HOST_OVERLAP_SMS_PREFILL", str(_EXL3_OVERLAP_DECODE)) or 0)
++_EXL3_OVERLAP_GROUP = int(os.environ.get("EXL3_HOST_OVERLAP_GROUP", "0") or 0)   # SMs per cold expert group (0 = 8; needs 3e+)
++_EXL3_SIDE_STREAMS: dict = {}
++_EXL3_NO_FAT_SLICE = os.environ.get("EXL3_FAT_SLICE", "1") == "0"
++# thor prefill DMA streaming (EXL3_HOST_DMA=1, 2026-09-29): in prefill every host-resident (cold) expert is needed, so instead of
++# the cold kernel reading them over PCIe with SM loads (~22-25 GB/s), copy engines stream them into rotating VRAM staging slots
++# (56 GB/s per GPU, both GPUs at once) in batches of _DMA_B experts, the cold kernel runs each batch from VRAM on the side stream,
++# and the next MoE layer's first batches are prefetched while attention runs. Decode (CUDA graphs) keeps the UVA path.
++_EXL3_HOST_DMA_MODE = int(os.environ.get("EXL3_HOST_DMA", "0") or 0)   # 1 = stream all cold experts, 2 = only the active ones
++_EXL3_HOST_DMA = _EXL3_HOST_DMA_MODE > 0
++_DMA_B = int(os.environ.get("EXL3_HOST_DMA_BATCH", "16"))
++_DMA_NS = int(os.environ.get("EXL3_HOST_DMA_SLOTS", "3"))
++_EXL3_DMA_COLD_FUSED = os.environ.get("EXL3_HOST_DMA_COLD_FUSED", "0") == "1"
++_DMA_MIN_TOKENS = int(os.environ.get("EXL3_HOST_DMA_MIN_TOKENS", "65"))   # below this, cold experts stay zero-copy (UVA): a short
++# chunk touches few rows per expert, so each cold weight crosses PCIe about once either way and the copy only adds latency
++_DMA_HOT_FIRST = os.environ.get("EXL3_HOST_DMA_HOT_FIRST", "1") == "1"   # launch the hot experts before the cold batch loop
++_DMA_SMS = int(os.environ.get("EXL3_HOST_DMA_SMS", "0") or 0)   # cold-side SM budget while DMA staging is on (0 = the prefill overlap value)
++_DMA_STATE: dict = {}      # device index -> {"s13": [..], "s2": [..], "copy": Stream, "free": [Event|None]*NS, "shape": (r13, r2)}
++_DMA_LAST_LAYER: dict = {}  # device index -> last registered DMA layer (links layer -> next layer for prefetch)
++
++
++def _dma_register(layer, h13, h2, dev):
++    """Load time: allocate the device's staging slots (once) and link this layer into the per-device prefetch chain."""
++    r13 = tuple(h13.host.shape[1:]); r2 = tuple(h2.host.shape[1:])
++    st = _DMA_STATE.get(dev.index)
++    if st is None:
++        st = _DMA_STATE[dev.index] = {
++            "s13": [torch.empty((_DMA_B,) + r13, dtype=torch.int16, device=dev) for _ in range(_DMA_NS)],
++            "s2": [torch.empty((_DMA_B,) + r2, dtype=torch.int16, device=dev) for _ in range(_DMA_NS)],
++            "copy": None, "free": [None] * _DMA_NS, "shape": (r13, r2)}
++        logger.info("EXL3 host DMA: %d staging slots x %d experts on %s (%.0f MB)", _DMA_NS, _DMA_B, dev,
++                    _DMA_NS * _DMA_B * (h13.host[0].numel() + h2.host[0].numel()) * 2 / 1e6)
++    if st["shape"] != (r13, r2):
++        return False   # different per-layer K: this layer keeps the UVA path
++    n_cold = len(h13.cold)
++    layer._exl3_dma = {"h13": h13, "h2": h2, "n_cold": n_cold,
++                       "batches": [(i, min(i + _DMA_B, n_cold)) for i in range(0, n_cold, _DMA_B)],
++                       "ptr": None, "bmask": None, "pre": {}, "next": None}
++    prev = _DMA_LAST_LAYER.get(dev.index)
++    if prev is not None:
++        prev._exl3_dma["next"] = layer
++    _DMA_LAST_LAYER[dev.index] = layer
++    return True
++
++
++def _dma_tables(layer, dev, n_exp):
++    """First prefill use: pointer tables with every cold expert redirected to its staging slot + per-batch expert masks."""
++    D = layer._exl3_dma; st = _DMA_STATE[dev.index]
++    if D["ptr"] is not None:
++        return D
++    cold = D["h13"].cold
++    idx = torch.tensor(cold, dtype=torch.long, device=dev)
++    g = []; u = []; d = []
++    for i, e in enumerate(cold):
++        j, r = divmod(i, _DMA_B); sl = j % _DMA_NS
++        g.append(st["s13"][sl][r][0].data_ptr()); u.append(st["s13"][sl][r][1].data_ptr()); d.append(st["s2"][sl][r].data_ptr())
++    ptrs = layer._exl3_ptrs
++    D["ptr"] = {}
++    for key, vals in (("gate_trellis", g), ("up_trellis", u), ("down_trellis", d)):
++        t = ptrs[key].clone(); t[idx] = torch.tensor(vals, dtype=torch.int64, device=dev); D["ptr"][key] = t
++    bm = []
++    for (i0, i1) in D["batches"]:
++        m = torch.zeros(n_exp + 1, dtype=torch.bool, device=dev); m[idx[i0:i1]] = True; bm.append(m)
++    D["bmask"] = bm
++    return D
++
++
++def _dma2_prep(layer, dev):
++    """Mode 2 (active-only): per-slot pointer tables for this layer (base = its hot/UVA tables; cold entries are rewritten per
++    batch) and the device address vectors of each slot's rows."""
++    D = layer._exl3_dma; st = _DMA_STATE[dev.index]
++    if D.get("tabs") is not None:
++        return D
++    if st.get("addr") is None:
++        st["addr"] = [{"gate_trellis": torch.tensor([st["s13"][sl][r][0].data_ptr() for r in range(_DMA_B)], dtype=torch.int64, device=dev),
++                       "up_trellis": torch.tensor([st["s13"][sl][r][1].data_ptr() for r in range(_DMA_B)], dtype=torch.int64, device=dev),
++                       "down_trellis": torch.tensor([st["s2"][sl][r].data_ptr() for r in range(_DMA_B)], dtype=torch.int64, device=dev)}
++                      for sl in range(_DMA_NS)]
++        st["rr"] = 0
++    ptrs = layer._exl3_ptrs
++    D["tabs"] = [{k: ptrs[k].clone() for k in ("gate_trellis", "up_trellis", "down_trellis")} for _ in range(_DMA_NS)]
++    D["pos"] = {e: i for i, e in enumerate(D["h13"].cold)}
++    return D
++
++
++def _dma2_issue(layer, dev, sl, experts):
++    """Copy each listed cold expert's rows (host row order) into slot `sl` rows 0..n-1, after that slot's last reader."""
++    st = _DMA_STATE[dev.index]; D = layer._exl3_dma
++    if st["copy"] is None:
++        st["copy"] = torch.cuda.Stream(dev)
++    cs = st["copy"]
++    with torch.cuda.stream(cs):
++        if st["free"][sl] is not None:
++            cs.wait_event(st["free"][sl])
++        for r, e in enumerate(experts):
++            i = D["pos"][e]
++            st["s13"][sl][r].copy_(D["h13"].host[i], non_blocking=True)
++            st["s2"][sl][r].copy_(D["h2"].host[i], non_blocking=True)
++        ev = torch.cuda.Event(); ev.record(cs)
++    return ev
++
++
++def _dma_issue(layer, j, dev):
++    """Enqueue the host->VRAM copy of cold batch j of `layer` into slot j % NS (after that slot's last reader finished)."""
++    st = _DMA_STATE[dev.index]; D = layer._exl3_dma
++    if st["copy"] is None:
++        st["copy"] = torch.cuda.Stream(dev)
++    cs = st["copy"]; sl = j % _DMA_NS; i0, i1 = D["batches"][j]
++    with torch.cuda.stream(cs):
++        if st["free"][sl] is not None:
++            cs.wait_event(st["free"][sl])
++        st["s13"][sl][: i1 - i0].copy_(D["h13"].host[i0:i1], non_blocking=True)
++        st["s2"][sl][: i1 - i0].copy_(D["h2"].host[i0:i1], non_blocking=True)
++        ev = torch.cuda.Event(); ev.record(cs)
++    return ev
++# thor lean routing prep (decode-sized calls, tokens <= FAT_EXPERT_THRESHOLD): skip the fat-route ops that cannot fire,
++# reuse expert_count as standard_count, one fewer where/neg pair for the split counts, and constant ones / token-index
++# tensors from fixed buffers allocated once outside graph capture (never regrown, so captured graphs stay valid).
++_EXL3_LEAN_PREP = os.environ.get("EXL3_LEAN_PREP", "0") == "1"
++_LEAN_MAX_ROWS = 4096
++_LEAN_BUFS: dict = {}
++
++
++def _lean_const(kind: str, device: torch.device, topk: int = 0):
++    key = (kind, str(device), topk)
++    buf = _LEAN_BUFS.get(key)
++    if buf is None:
++        if torch.cuda.is_current_stream_capturing():
++            return None  # never allocate constants inside a capture: kernels there only run on replay
++        if kind == "ones":
++            buf = torch.ones(_LEAN_MAX_ROWS, dtype=torch.long, device=device)
++        else:
++            buf = torch.arange(_LEAN_MAX_ROWS, dtype=torch.long, device=device) // topk
++        _LEAN_BUFS[key] = buf
++    return buf
+ try:
+     FAT_EXPERT_THRESHOLD = max(0, int(os.environ.get("VLLM_EXL3_FAT_THRESHOLD", "256")))
+ except (TypeError, ValueError):
+@@ -939,6 +1077,7 @@
+ 
+ 
+ _FAT_SCRATCH_CACHE: dict[tuple[str, int, int, int, int], dict[str, torch.Tensor]] = {}
++_FAT_SCRATCH_SHARED = os.environ.get("EXL3_FAT_SCRATCH_SHARED", "1") == "1"
+ 
+ 
+ def _fat_scratch(
+@@ -948,10 +1087,21 @@
+     intermediate = int(getattr(gate, "out_features", 2048))
+     k_words = int(gate.trellis.shape[2])
+     bucketed_cap = max(256, ((int(capacity) + 255) // 256) * 256)
+-    key = (str(device), bucketed_cap, intermediate, hidden, k_words)
+-    scratch = _FAT_SCRATCH_CACHE.get(key)
+-    if scratch is not None:
+-        return scratch
++    if _FAT_SCRATCH_SHARED:
++        # thor (2026-09-29): ONE grow-only scratch per device/shape instead of one per 256-row bucket. Every row-dependent
++        # buffer is used as [:n_rows] (a contiguous row slice), so the largest set serves all smaller experts. The per-bucket
++        # cache never freed: up to 16 sets (~3.3 GB/GPU) at 4K-token chunks and 32 (~11 GB) at 8K, which OOM'd MAX_BATCHED=8192.
++        key = (str(device), -1, intermediate, hidden, k_words)
++        scratch = _FAT_SCRATCH_CACHE.get(key)
++        if scratch is not None and scratch["h"].shape[0] >= bucketed_cap:
++            return scratch
++        if scratch is not None:
++            del _FAT_SCRATCH_CACHE[key]; scratch = None   # grow: drop the smaller set first (stream-ordered reuse)
++    else:
++        key = (str(device), bucketed_cap, intermediate, hidden, k_words)
++        scratch = _FAT_SCRATCH_CACHE.get(key)
++        if scratch is not None:
++            return scratch
+ 
+     in_tiles, out_tiles, k_words = map(int, gate.trellis.shape)
+     scratch = {
+@@ -1025,15 +1175,17 @@
+     cap: int,
+     out: torch.Tensor,
+     use_kernel: bool = True,
++    skip: set | None = None,
+ ) -> torch.Tensor:
+-    """Run fat experts with persistent scratch and accelerated 128x128 CUDA GEMM."""
++    """Run fat experts with persistent scratch and accelerated 128x128 CUDA GEMM.
++    `skip`: expert ids handled elsewhere (thor: busy cold experts run fused from the DMA staging) -- rows are stepped over."""
+     native_c = _load_native_exl3_ext()
+     ext = load_exllamav3_ext()
+     offset = 0
+     for e, n_rows in enumerate(counts_host):
+         start = offset
+         offset += n_rows
+-        if n_rows <= cap:
++        if n_rows <= cap or (skip is not None and e in skip):
+             continue
+ 
+         token_idx = token_sorted[start:offset]
+@@ -1201,19 +1353,31 @@
+ 
+     local = map_topk_to_local(ids, n_exp, expert_map)
+     topk = int(ids.shape[-1])
+-    flat_token = torch.arange(tokens, device=x2d.device, dtype=torch.long).repeat_interleave(topk)
++    lean = _EXL3_LEAN_PREP and 0 < tokens <= FAT_EXPERT_THRESHOLD and tokens * topk <= _LEAN_MAX_ROWS
++    ones_c = _lean_const("ones", x2d.device) if lean else None
++    tok_c = _lean_const("tok", x2d.device, topk) if lean else None
++    lean = lean and ones_c is not None and tok_c is not None
++    if lean:
++        flat_token = tok_c[: tokens * topk]
++    else:
++        flat_token = torch.arange(tokens, device=x2d.device, dtype=torch.long).repeat_interleave(topk)
+     flat_weight = weights.reshape(-1).to(dtype=torch.float16)
+     # scatter_add stays on GPU. torch.bincount can host-stage and break CUDA graphs.
+     expert_count = torch.zeros(n_exp + 1, dtype=torch.long, device=local.device)
+     expert_count.scatter_add_(
+-        0, local.long(), torch.ones(local.shape, dtype=torch.long, device=local.device)
++        0, local.long(),
++        ones_c[: local.numel()] if lean else torch.ones(local.shape, dtype=torch.long, device=local.device)
+     )
+     out = torch.zeros(tokens, hidden, dtype=torch.float32, device=x2d.device)
+     xh = x2d.contiguous().half()
+ 
+     counts = expert_count[:n_exp]
+ 
+-    if tokens > TEMP_ROWS_FUSED and bool((counts > TEMP_ROWS_FUSED).any().item()):
++    # thor: with fat routing at a threshold below TEMP_ROWS_FUSED, every expert that could overflow the fused kernel's
++    # rows is already routed to the fat path below, so slicing only re-streams host-resident cold experts and re-
++    # reconstructs fat experts once per slice. EXL3_FAT_SLICE=0 skips it (A/B knob; default keeps upstream behavior).
++    slice_ok = not (_EXL3_NO_FAT_SLICE and 0 < FAT_EXPERT_THRESHOLD < TEMP_ROWS_FUSED)
++    if slice_ok and tokens > TEMP_ROWS_FUSED and bool((counts > TEMP_ROWS_FUSED).any().item()):
+         logger.info_once("EXL3 fat-chunk slicing ACTIVE (tokens=%d)" % tokens)
+         # Deep-context prefill chunks can route more than TEMP_ROWS_FUSED rows
+         # to a single expert. The fused kernel covers at most TEMP_ROWS_FUSED
+@@ -1231,32 +1395,58 @@
+             )
+         return out
+ 
+-    fat = counts > FAT_EXPERT_THRESHOLD
+     # counts[e] cannot exceed the row count, so with no more rows than the
+     # threshold no expert can be fat. Testing that Python-side first keeps the
+     # device sync below off the decode path, where graph capture forbids it.
+     fat_possible = tokens > FAT_EXPERT_THRESHOLD
+-    fat_route = torch.zeros_like(local, dtype=torch.bool)
+-    if fat_possible and bool(fat.any().item()):
+-        safe_local = local.clamp(min=0, max=max(n_exp - 1, 0))
+-        fat_route = (local < n_exp) & fat.index_select(0, safe_local)
+-
+-    # The standard kernel handles non-fat routes. Fat routes are represented by
+-    # the invalid sentinel with zero weight here and are dispatched exactly once
+-    # below through the fat GEMM path.
+-    standard_local = local.masked_fill(fat_route, n_exp)
+-    standard_weight = flat_weight.masked_fill(fat_route, 0)
+-    order = standard_local.argsort()
+-    token_sorted = flat_token[order]
+-    weight_sorted = standard_weight[order]
+-    standard_count = torch.zeros(
+-        n_exp + 1, dtype=torch.long, device=local.device
+-    )
+-    standard_count.scatter_add_(
+-        0,
+-        standard_local.long(),
+-        torch.ones(standard_local.shape, dtype=torch.long, device=local.device),
+-    )
++    dma_on = False
++    dma_cold_fused = False
++    counts_host_dma = None
++    if lean:
++        # no fat routes possible: standard == all routes, standard_count == expert_count (bit-identical results)
++        fat = None
++        order = local.argsort()
++        token_sorted = flat_token[order]
++        weight_sorted = flat_weight[order]
++        standard_count = expert_count
++    else:
++        fat = counts > FAT_EXPERT_THRESHOLD
++        _cm0 = getattr(layer, "_exl3_cold_mask", None)
++        dma_on = (_EXL3_HOST_DMA and tokens >= _DMA_MIN_TOKENS and tokens > 64 and _cm0 is not None and getattr(layer, "_exl3_dma", None) is not None
++                  and not torch.cuda.is_current_stream_capturing())
++        counts_host_dma = None
++        if dma_on:
++            counts_host_dma = counts.tolist()
++            dma_on = max((counts_host_dma[e] for e in layer._exl3_dma["h13"].cold), default=0) <= TEMP_ROWS_FUSED
++        if dma_on and _EXL3_DMA_COLD_FUSED:
++            # busy cold experts (>FAT rows) run fused from the DMA staging instead of the fat path's UVA reconstruct.
++            # (2026-09-29: the first version double-counted them -- apply_exl3_batched_fat picks experts by row count, not by
++            # the fat mask -- KL 0.149 vs 0.053; they are now skipped there explicitly.)
++            fat = fat & ~_cm0[:n_exp]
++            dma_cold_fused = True
++        fat_route = torch.zeros_like(local, dtype=torch.bool)
++        if fat_possible and bool(fat.any().item()):
++            safe_local = local.clamp(min=0, max=max(n_exp - 1, 0))
++            fat_route = (local < n_exp) & fat.index_select(0, safe_local)
++
++        # The standard kernel handles non-fat routes. Fat routes are represented by
++        # the invalid sentinel with zero weight here and are dispatched exactly once
++        # below through the fat GEMM path.
++        standard_local = local.masked_fill(fat_route, n_exp)
++        standard_weight = flat_weight.masked_fill(fat_route, 0)
++        order = standard_local.argsort()
++        token_sorted = flat_token[order]
++        weight_sorted = standard_weight[order]
++        standard_count = torch.zeros(
++            n_exp + 1, dtype=torch.long, device=local.device
++        )
++        standard_count.scatter_add_(
++            0,
++            standard_local.long(),
++            torch.ones(standard_local.shape, dtype=torch.long, device=local.device),
++        )
++    if not dma_on and getattr(layer, "_exl3_dma", None) is not None and layer._exl3_dma.get("pre"):
++        layer._exl3_dma["pre"] = {}   # prefetched slots are only valid for the DMA path of this same forward
+     fn = exllamav3_ext.exl3_moe
+     # -1 = unknown active count: max-concurrency grid, no .item() host sync.
+     n_active_host = -1 if _exl3_moe_accepts_num_active(fn) else None
+@@ -1288,12 +1478,135 @@
+         *getattr(layer, "_exl3_codebook_flags", (True, False, True, False, True, False)),
+         float(limit) if (limit is not None and limit > 0) else 0.0,
+     )
+-    if n_active_host is not None:
++    cold_mask = getattr(layer, "_exl3_cold_mask", None)
++    force = getattr(exllamav3_ext, "xmoe_set_force_group", None)
++    if cold_mask is not None and force is not None and os.environ.get("EXL3_HOST_SPLIT", "1") == "1":
++        # thor split launch: hot experts on the (flat) decode kernel, host-resident cold experts on the group kernel,
++        # which streams each expert contiguously over PCIe. Negative counts = skip but keep the row offsets.
++        # Both launches atomically accumulate into `out`.
++        cold_count = torch.where(cold_mask, standard_count, -standard_count)
++        hot_count = -cold_count if lean else torch.where(cold_mask, -standard_count, standard_count)
++        la = list(args)
++        ck = int(getattr(layer, "_exl3_cold_k", k))
++        ovl = _EXL3_OVERLAP_PREFILL if tokens > 64 else _EXL3_OVERLAP_DECODE
++        if dma_on and _DMA_SMS > 0:
++            ovl = _DMA_SMS   # staged cold experts read VRAM, not PCIe: their share of the SMs can follow their share of the rows
++        conc = int(temps[0].shape[0]); g_cold = ovl // 8
++        budget = getattr(exllamav3_ext, "xmoe_set_sm_budget", None)
++        slot = getattr(exllamav3_ext, "xmoe_set_lock_slot", None)
++        if 0 < g_cold < conc and budget is not None and slot is not None:
++            # Overlap: cold launch on a side stream (own lock buffer, own temp groups, `ovl` SMs), hot launch on the
++            # current stream with the remaining SMs, so both grids are co-resident (their group/grid barriers spin).
++            # Graph-capturable: the fork/join is event based. `out` is accumulated atomically by both.
++            dev = x2d.device
++            nsm = _EXL3_SIDE_STREAMS.get(("nsm", dev))
++            if nsm is None:
++                nsm = _EXL3_SIDE_STREAMS[("nsm", dev)] = torch.cuda.get_device_properties(dev).multi_processor_count
++            side = _EXL3_SIDE_STREAMS.get(dev)
++            if side is None:
++                side = _EXL3_SIDE_STREAMS[dev] = torch.cuda.Stream(dev)
++            g_hot = conc - g_cold
++            logger.info_once("EXL3 host-expert overlap ACTIVE (cold launch on a side stream: decode %d SMs, prefill %d SMs of %d)"
++                             % (_EXL3_OVERLAP_DECODE, _EXL3_OVERLAP_PREFILL, nsm))
++            main = torch.cuda.current_stream(dev)
++            side.wait_stream(main)
++            hot_first = dma_on and _DMA_HOT_FIRST
++            if hot_first:
++                # the cold side is a Python loop of copies + batch launches; issuing the hot grid first keeps the main
++                # stream busy meanwhile (2026-09-29 profile: ~0.5 ms/layer main-stream gap before the hot launch)
++                la[2] = hot_count
++                la[5:9] = [t[:g_hot] for t in temps]
++                budget(nsm - ovl)
++                try:
++                    fn(*la, n_active_host) if n_active_host is not None else fn(*la)
++                finally:
++                    budget(0)
++            D2 = _dma2_prep(layer, dev) if (dma_on and _EXL3_HOST_DMA_MODE == 2) else None
++            D = _dma_tables(layer, dev, n_exp) if (dma_on and D2 is None) else None
++            if D2 is not None:
++                logger.info_once("EXL3 host DMA streaming ACTIVE for prefill: active cold experts only (%d-expert batches, %d slots)"
++                                 % (_DMA_B, _DMA_NS))
++                act = [e for e in D2["h13"].cold if counts_host_dma[e] > 0 and (dma_cold_fused or counts_host_dma[e] <= FAT_EXPERT_THRESHOLD)]
++                bl = [act[i:i + _DMA_B] for i in range(0, len(act), _DMA_B)]
++                st2 = _DMA_STATE[dev.index]; slots = []; cev2 = {}
++                for j in range(len(bl)):
++                    slots.append(st2["rr"]); st2["rr"] = (st2["rr"] + 1) % _DMA_NS
++                for j in range(min(_DMA_NS, len(bl))):
++                    cev2[j] = _dma2_issue(layer, dev, slots[j], bl[j])
++            if D is not None:
++                logger.info_once("EXL3 host DMA streaming ACTIVE for prefill (%d-expert batches, %d slots)" % (_DMA_B, _DMA_NS))
++                nb = len(D["batches"]); cev = dict(D.pop("pre", {}) or {}); D["pre"] = {}
++                for j in range(min(_DMA_NS, nb)):
++                    if j not in cev:
++                        cev[j] = _dma_issue(layer, j, dev)
++            with torch.cuda.stream(side):
++                lc = list(la)
++                lc[2] = cold_count
++                lc[5:9] = [t[g_hot:] for t in temps]
++                lc[10], lc[11], lc[12] = ck, ck, ck
++                gw = getattr(exllamav3_ext, "xmoe_set_group_width", None) if _EXL3_OVERLAP_GROUP else None
++                slot(1); budget(ovl); force(1)
++                if gw is not None:
++                    gw(_EXL3_OVERLAP_GROUP)
++                try:
++                    if D2 is not None:
++                        for j, ex in enumerate(bl):
++                            sl = slots[j]; tabs = D2["tabs"][sl]; n = len(ex)
++                            idx = torch.tensor(ex, dtype=torch.long).pin_memory().to(dev, non_blocking=True)
++                            side.wait_event(cev2[j])
++                            for key, li in (("gate_trellis", 13), ("up_trellis", 16), ("down_trellis", 19)):
++                                tabs[key].index_copy_(0, idx, st2["addr"][sl][key][:n]); lc[li] = tabs[key]
++                            m = torch.zeros(n_exp + 1, dtype=torch.bool, device=dev); m.index_fill_(0, idx, True)
++                            lc[2] = torch.where(m, standard_count, -standard_count)
++                            fn(*lc, n_active_host) if n_active_host is not None else fn(*lc)
++                            done = torch.cuda.Event(); done.record(side); st2["free"][sl] = done
++                            if j + _DMA_NS < len(bl):
++                                cev2[j + _DMA_NS] = _dma2_issue(layer, dev, slots[j + _DMA_NS], bl[j + _DMA_NS])
++                    elif D is None:
++                        fn(*lc, n_active_host) if n_active_host is not None else fn(*lc)
++                    else:
++                        st = _DMA_STATE[dev.index]
++                        lc[13] = D["ptr"]["gate_trellis"]; lc[16] = D["ptr"]["up_trellis"]; lc[19] = D["ptr"]["down_trellis"]
++                        for j in range(nb):
++                            side.wait_event(cev[j])
++                            lc[2] = torch.where(D["bmask"][j], standard_count, -standard_count)
++                            fn(*lc, n_active_host) if n_active_host is not None else fn(*lc)
++                            done = torch.cuda.Event(); done.record(side); st["free"][j % _DMA_NS] = done
++                            if j + _DMA_NS < nb:
++                                cev[j + _DMA_NS] = _dma_issue(layer, j + _DMA_NS, dev)
++                        nxt = D.get("next")
++                        if nxt is not None and getattr(nxt, "_exl3_dma", None) is not None:
++                            nd = nxt._exl3_dma   # prefetch the next MoE layer's first batches while attention runs
++                            nd["pre"] = {j: _dma_issue(nxt, j, dev) for j in range(min(_DMA_NS, len(nd["batches"])))}
++                finally:
++                    if gw is not None:
++                        gw(0)
++                    force(0); budget(0); slot(0)
++            if not hot_first:
++                la[2] = hot_count
++                la[5:9] = [t[:g_hot] for t in temps]
++                budget(nsm - ovl)
++                try:
++                    fn(*la, n_active_host) if n_active_host is not None else fn(*la)
++                finally:
++                    budget(0)
++            main.wait_stream(side)
++        else:
++            la[2] = hot_count
++            fn(*la, n_active_host) if n_active_host is not None else fn(*la)
++            force(1)
++            try:
++                la[10], la[11], la[12] = ck, ck, ck
++                la[2] = cold_count
++                fn(*la, n_active_host) if n_active_host is not None else fn(*la)
++            finally:
++                force(0)
++    elif n_active_host is not None:
+         fn(*args, n_active_host)
+     else:
+         fn(*args)
+ 
+-    if fat_possible and bool(fat.any().item()):
++    if fat_possible and fat is not None and bool(fat.any().item()):
+         fat_order = local.argsort()
+         apply_exl3_batched_fat(
+             xh,
+@@ -1305,10 +1618,42 @@
+             FAT_EXPERT_THRESHOLD,
+             out,
+             use_kernel=_fat_kernel_available(),
++            skip=(set(layer._exl3_dma["h13"].cold) if dma_cold_fused else None),
+         )
+     return out
+ 
+ 
++# thor host-expert project (2026-09-28): EXL3_EXPERT_STATS=<dir> counts routed-expert hits per layer (graph-safe index_add into
++# persistent GPU buffers; decode vs prefill split by batch rows) and dumps them every EXL3_EXPERT_STATS_EVERY calls (eager only).
++_EXL3_EXPERT_STATS = os.environ.get("EXL3_EXPERT_STATS", "")
++_EXL3_STATS_EVERY = int(os.environ.get("EXL3_EXPERT_STATS_EVERY", "400"))
++_EXL3_STATS_LAYERS: dict = {}
++_EXL3_STATS_CALLS = [0]
++
++
++def _expert_stats_count(layer, ids, tokens):
++    key = getattr(layer, "layer_name", None) or getattr(layer, "prefix", None) or str(id(layer))
++    buf = _EXL3_STATS_LAYERS.get(key)
++    if buf is None:
++        n = len(getattr(layer, "_exl3_inners", [])) or int(ids.max().item()) + 1
++        buf = torch.zeros(2, n, dtype=torch.float64, device=ids.device)
++        _EXL3_STATS_LAYERS[key] = buf
++    row = 0 if tokens <= 64 else 1   # 0 = decode-sized batches, 1 = prefill chunks
++    flat = ids.reshape(-1)
++    buf[row].index_add_(0, flat.clamp(min=0), torch.ones_like(flat, dtype=torch.float64))
++    _EXL3_STATS_CALLS[0] += 1
++    if _EXL3_STATS_CALLS[0] % _EXL3_STATS_EVERY == 0:
++        try:
++            import torch.distributed as dist
++            rank = dist.get_rank() if dist.is_initialized() else 0
++        except Exception:
++            rank = 0
++        if rank == 0:
++            os.makedirs(_EXL3_EXPERT_STATS, exist_ok=True)
++            torch.save({k: v.cpu() for k, v in _EXL3_STATS_LAYERS.items()}, os.path.join(_EXL3_EXPERT_STATS, "expert_stats.pt.tmp"))
++            os.replace(os.path.join(_EXL3_EXPERT_STATS, "expert_stats.pt.tmp"), os.path.join(_EXL3_EXPERT_STATS, "expert_stats.pt"))
++
++
+ def apply_exl3_experts(
+     x: torch.Tensor,
+     topk_ids: torch.Tensor,
+@@ -1329,6 +1674,8 @@
+     ids = topk_ids.reshape(tokens, -1).to(torch.long)
+     weights = topk_weights.reshape(tokens, -1)
+     expert_map = pin_exl3_expert_map(layer, x2d.device)
++    if _EXL3_EXPERT_STATS:
++        _expert_stats_count(layer, ids, tokens)
+ 
+     # Native p2b is a decode-only path.  It is selected explicitly with
+     # ``native`` or automatically when the optional extension is installed;
+@@ -1814,6 +2161,122 @@
+         )
+ 
+ 
++# ---------------------------------------------------------------------------------------------------------------------
++# thor host-expert project (2026-09-28): EXL3_HOST_EXPERTS=<plan.json> {layer_name: [cold expert ids]}. Hot experts live in
++# a compact GPU tensor, cold experts in pinned host RAM exposed to CUDA as a zero-copy UVA alias, so every MoE path (fused
++# kernel pointer tables, LinearEXL3 forward) reads them over PCIe without kernel changes. Only the trellis (the bulk) moves;
++# suh/svh/mcg/mul1 stay stacked on the GPU.
++_EXL3_HOST_PLAN_PATH = os.environ.get("EXL3_HOST_EXPERTS", "")
++_EXL3_HOST_PLAN = None
++# EXL3_HOST_COLD_PACK=<dir of a lower-bpw EXL3 pack of the same model>: cold (host) experts are loaded from that pack instead,
++# at its bit width (e.g. hot 3 bpw from the served pack, cold 2 bpw from the 2.0 pack) -> fewer PCIe bytes per cold read.
++_EXL3_HOST_COLD_PACK = os.environ.get("EXL3_HOST_COLD_PACK", "")
++
++
++def _cold_pack_bits() -> int:
++    import json as _json
++    q = _json.load(open(os.path.join(_EXL3_HOST_COLD_PACK, "config.json")))["quantization_config"]
++    return int(q.get("bits", 2))
++
++
++def _host_plan_for(layer_name: str):
++    global _EXL3_HOST_PLAN
++    if not _EXL3_HOST_PLAN_PATH:
++        return None
++    if _EXL3_HOST_PLAN is None:
++        import json
++        _EXL3_HOST_PLAN = json.load(open(_EXL3_HOST_PLAN_PATH))
++    cold = _EXL3_HOST_PLAN.get(layer_name)
++    if cold is None:  # tolerate prefix differences (language_model.model.layers.N... vs model.layers.N...)
++        for k, v in _EXL3_HOST_PLAN.items():
++            if k.endswith(layer_name) or layer_name.endswith(k):
++                cold = v
++                break
++    return sorted(set(int(e) for e in cold)) if cold else None
++
++
++_COLD_INDEX = None
++
++
++def _fill_cold_from_pack(layer, h13, h2) -> None:
++    """Load cold experts (trellis + suh/svh) from the lower-bpw pack, TP-sharded like the served pack."""
++    global _COLD_INDEX
++    import json as _json, re as _re
++    from safetensors import safe_open
++    if _COLD_INDEX is None:
++        _COLD_INDEX = _json.load(open(os.path.join(_EXL3_HOST_COLD_PACK, "model.safetensors.index.json")))["weight_map"]
++    m = _re.search(r"layers\.(\d+)\.", str(getattr(layer, "layer_name", "")))
++    if m is None:
++        raise RuntimeError(f"cold pack: cannot parse layer index from {getattr(layer, 'layer_name', '?')}")
++    L = int(m.group(1))
++    tp_rank, tp_size = _resolve_tp_geometry(layer)
++    handles = {}
++
++    def get(name):
++        f = _COLD_INDEX[name]
++        if f not in handles:
++            handles[f] = safe_open(os.path.join(_EXL3_HOST_COLD_PACK, f), "pt")
++        return handles[f].get_tensor(name)
++
++    for i, e in enumerate(h13.cold):
++        base = f"layers.{L}.ffn.experts.{e}"
++        for w, idx in (("w1", 0), ("w3", 1)):
++            h13.host[i, idx].copy_(shard_exl3_col(get(f"{base}.{w}.trellis"), "trellis", tp_rank, tp_size))
++            layer.w13_suh.data[e, idx].copy_(shard_exl3_col(get(f"{base}.{w}.suh"), "suh", tp_rank, tp_size))
++            layer.w13_svh.data[e, idx].copy_(shard_exl3_col(get(f"{base}.{w}.svh"), "svh", tp_rank, tp_size))
++        h2.host[i].copy_(shard_exl3_row(get(f"{base}.w2.trellis"), "trellis", tp_rank, tp_size))
++        layer.w2_suh.data[e].copy_(shard_exl3_row(get(f"{base}.w2.suh"), "suh", tp_rank, tp_size))
++        layer.w2_svh.data[e].copy_(shard_exl3_row(get(f"{base}.w2.svh"), "svh", tp_rank, tp_size))
++    logger.info("EXL3 host experts: %s cold experts loaded at %d-bit from %s", getattr(layer, "layer_name", "?"),
++                getattr(layer, "_exl3_cold_k", -1), _EXL3_HOST_COLD_PACK)
++
++
++class _CudaAlias:
++    """__cuda_array_interface__ over a device-accessible pointer (pinned host memory under UVA)."""
++
++    def __init__(self, ptr: int, shape, typestr: str):
++        self.__cuda_array_interface__ = {"shape": tuple(shape), "typestr": typestr, "data": (int(ptr), False),
++                                         "version": 3, "strides": None}
++
++
++def _uva_alias(host: torch.Tensor) -> torch.Tensor:
++    assert host.is_pinned(), "host expert storage must be pinned"
++    typestr = {torch.int16: "<i2", torch.float16: "<f2", torch.int32: "<i4"}[host.dtype]
++    return torch.as_tensor(_CudaAlias(host.data_ptr(), host.shape, typestr), device="cuda")
++
++
++class _HostExpertTrellis:
++    """Storage for one stacked trellis param split into hot (GPU) and cold (pinned host) rows."""
++
++    def __init__(self, n_exp: int, cold_ids, row_shape, device, host_row_shape=None):
++        self.n_exp = n_exp
++        self.cold = sorted(cold_ids)
++        cold_set = set(self.cold)
++        self.hot = [e for e in range(n_exp) if e not in cold_set]
++        self.slot = {}
++        for i, e in enumerate(self.hot):
++            self.slot[e] = ("gpu", i)
++        for i, e in enumerate(self.cold):
++            self.slot[e] = ("host", i)
++        self.gpu = torch.empty((len(self.hot),) + tuple(row_shape), dtype=torch.int16, device=device)
++        # explicit device: vLLM builds models under a CUDA default device. Exact-size pageable buffer + cudaHostRegister
++        # instead of .pin_memory(): torch's caching host allocator rounds to powers of two (~2x host RAM here -> OOM).
++        self.host = torch.empty((len(self.cold),) + tuple(host_row_shape or row_shape), dtype=torch.int16, device="cpu")
++        if self.host.numel():
++            err = torch.cuda.cudart().cudaHostRegister(self.host.data_ptr(), self.host.numel() * 2, 3)  # Portable|Mapped
++            if "success" not in str(err).lower() and str(err) != "0":
++                raise RuntimeError(f"cudaHostRegister failed: {err}")
++        self.host_alias = _uva_alias(self.host) if len(self.cold) else None
++
++    def row(self, e: int) -> torch.Tensor:
++        where, i = self.slot[e]
++        return self.gpu[i] if where == "gpu" else self.host[i]
++
++    def cuda_row(self, e: int) -> torch.Tensor:
++        where, i = self.slot[e]
++        return self.gpu[i] if where == "gpu" else self.host_alias[i]
++
++
+ class Exl3MoEMethod(FusedMoEMethodBase):
+     """Packed MCG trellis experts: create/load packed tensors, LinearEXL3 apply."""
+ 
+@@ -1852,12 +2315,25 @@
+ 
+         # w13_* : stacked [expert, {gate=0, up=1}, ...] so the stock
+         # expert_params_mapping (experts.w13_ + suffix) hits these names.
+-        w13_trellis = Parameter(
+-            torch.empty(
+-                num_experts, 2, in_tiles, out_tiles, k_words, dtype=torch.int16
+-            ),
+-            requires_grad=False,
+-        )
++        _cold = _host_plan_for(str(getattr(layer, "layer_name", "")))
++        if _cold:
++            _dev = torch.device("cuda", torch.cuda.current_device())
++            _ckw = _cold_pack_bits() * 16 if _EXL3_HOST_COLD_PACK else k_words
++            layer._exl3_cold_k = _ckw // 16
++            layer._exl3_host13 = _HostExpertTrellis(num_experts, _cold, (2, in_tiles, out_tiles, k_words), _dev, host_row_shape=(2, in_tiles, out_tiles, _ckw))
++            layer._exl3_host2 = _HostExpertTrellis(num_experts, _cold, (out_tiles, in_tiles, k_words), _dev, host_row_shape=(out_tiles, in_tiles, _ckw))
++            layer._exl3_num_experts = num_experts
++            # placeholder with the right leading dim (n_exp) but no trellis payload; loads are redirected
++            w13_trellis = Parameter(torch.empty(num_experts, 1, dtype=torch.int16, device=_dev), requires_grad=False)
++            logger.info("EXL3 host experts: %s keeps %d/%d experts in pinned host RAM",
++                        getattr(layer, "layer_name", "?"), len(_cold), num_experts)
++        else:
++            w13_trellis = Parameter(
++                torch.empty(
++                    num_experts, 2, in_tiles, out_tiles, k_words, dtype=torch.int16
++                ),
++                requires_grad=False,
++            )
+         w13_suh = Parameter(
+             torch.empty(num_experts, 2, hidden_size, dtype=torch.float16),
+             requires_grad=False,
+@@ -1876,12 +2352,15 @@
+             torch.zeros(num_experts, 2, 1, dtype=torch.int32),
+             requires_grad=False,
+         )
+-        w2_trellis = Parameter(
+-            torch.empty(
+-                num_experts, out_tiles, in_tiles, k_words, dtype=torch.int16
+-            ),
+-            requires_grad=False,
+-        )
++        if _cold:
++            w2_trellis = Parameter(torch.empty(num_experts, 1, dtype=torch.int16, device=_dev), requires_grad=False)
++        else:
++            w2_trellis = Parameter(
++                torch.empty(
++                    num_experts, out_tiles, in_tiles, k_words, dtype=torch.int16
++                ),
++                requires_grad=False,
++            )
+         w2_suh = Parameter(
+             torch.empty(
+                 num_experts, intermediate_size_per_partition, dtype=torch.float16
+@@ -1967,13 +2446,23 @@
+                 raise ValueError(f"unknown EXL3 shard_id={shard_id}")
+             dest.fill_(int(loaded.reshape(-1)[0].item()) if loaded.numel() else 0)
+             return True if return_success else None
++        _h13 = getattr(owner, "_exl3_host13", None) if owner is not None else None
++        if (_h13 is not None and _EXL3_HOST_COLD_PACK and suffix == "trellis"
++                and _h13.slot.get(expert_id, ("gpu", 0))[0] == "host"):
++            return True if return_success else None   # filled from the cold pack in process_weights_after_loading
+         if shard_id in ("w1", "w3"):
+             shard_idx = 0 if shard_id == "w1" else 1
+             sharded = shard_exl3_col(loaded, suffix, tp_rank, tp_size)
+-            dest = param.data[expert_id, shard_idx]
++            if _h13 is not None and suffix == "trellis":
++                dest = _h13.row(expert_id)[shard_idx]
++            else:
++                dest = param.data[expert_id, shard_idx]
+         elif shard_id == "w2":
+             sharded = shard_exl3_row(loaded, suffix, tp_rank, tp_size)
+-            dest = param.data[expert_id]
++            if _h13 is not None and suffix == "trellis":
++                dest = owner._exl3_host2.row(expert_id)
++            else:
++                dest = param.data[expert_id]
+         else:
+             raise ValueError(f"unknown EXL3 shard_id={shard_id}")
+ 
+@@ -2008,23 +2497,37 @@
+ 
+         n_exp = int(layer.w13_trellis.shape[0])
+         inners: list[dict[str, Any]] = []
++        _h13 = getattr(layer, "_exl3_host13", None)
++        _h2 = getattr(layer, "_exl3_host2", None)
++        if _h13 is not None and _EXL3_HOST_COLD_PACK:
++            _fill_cold_from_pack(layer, _h13, _h2)
++        if _h13 is not None:
++            # thor split launch: [n_exp + 1] bool, True for host-resident experts (+ the invalid-route sentinel slot)
++            _cm = torch.zeros(n_exp + 1, dtype=torch.bool, device=torch.device("cuda", torch.cuda.current_device()))
++            _cm[torch.tensor(_h13.cold, dtype=torch.long)] = True
++            _cm[n_exp] = True
++            layer._exl3_cold_mask = _cm
++            if _EXL3_HOST_DMA and _h2 is not None and len(_h13.cold):
++                _dma_register(layer, _h13, _h2, _cm.device)
++        _t13 = (lambda e, i: _h13.cuda_row(e)[i]) if _h13 is not None else (lambda e, i: layer.w13_trellis[e, i])
++        _t2 = (lambda e: _h2.cuda_row(e)) if _h2 is not None else (lambda e: layer.w2_trellis[e])
+         for e in range(n_exp):
+             gate = make_linear_exl3(
+-                layer.w13_trellis[e, 0],
++                _t13(e, 0),
+                 layer.w13_suh[e, 0],
+                 layer.w13_svh[e, 0],
+                 _moe_marker_or_none(layer.w13_mcg[e, 0]),
+                 _moe_marker_or_none(layer.w13_mul1[e, 0]),
+             )
+             up = make_linear_exl3(
+-                layer.w13_trellis[e, 1],
++                _t13(e, 1),
+                 layer.w13_suh[e, 1],
+                 layer.w13_svh[e, 1],
+                 _moe_marker_or_none(layer.w13_mcg[e, 1]),
+                 _moe_marker_or_none(layer.w13_mul1[e, 1]),
+             )
+             down = make_linear_exl3(
+-                layer.w2_trellis[e],
++                _t2(e),
+                 layer.w2_suh[e],
+                 layer.w2_svh[e],
+                 _moe_marker_or_none(layer.w2_mcg[e]),

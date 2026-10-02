@@ -1,0 +1,34 @@
+{
+  "runtime_adaptations": [
+    {
+      "file": "entrypoints/openai/completion/protocol.py",
+      "before": "0be20e3d7f21ab6cbe0ba77cb50068aa39a35fc0369ef38de068ac38ca9800aa",
+      "after": "d02fcf6d154ab79f868262f7a1007b0429f3bade8a88ef25c2c06cc6e055790b"
+    },
+    {
+      "file": "entrypoints/openai/completion/serving.py",
+      "before": "75d05ddddf303734a078a3e42fcb173fef58ea56da09bc0b5c7525cb9bbbf527",
+      "after": "f1866df2880bbb434f84a9d6d6e1c15253ae5b14b137b73b4682136a8205ac65"
+    },
+    {
+      "file": "model_executor/models/registry.py",
+      "before": "a6b4dabce4c8c606c47462d19e7c46ada96af0153db116b3c294265f86017ad8",
+      "after": "17dcf30244711f940f107c6412c20ea2e066cb078072d91f5dfb261d0d2a73c1"
+    },
+    {
+      "file": "models/deepseek_v4_1/nvidia/model.py",
+      "before": "47ff28d3279b61d2c5c6a2edc80ac74751f4c41d7a5b3afcf52819a0941d3423",
+      "after": "2a9130ac12c56d1f3b37eaed6f82ff0d0c35f157028c2d737ede1ae148d69ddd"
+    },
+    {
+      "file": "models/deepseek_v4_1/common/engram.py",
+      "before": "8faafb768972509b62b14354efa4c99feab3438c24336f9ba447db4840d2bb5d",
+      "after": "5d3d14bf6a97fc61fac5e0a260c41e6ae9423013abd821ae695a12877b808a9a"
+    },
+    {
+      "file": "model_executor/model_loader/default_loader.py",
+      "before": "9c9d54b1b650bf5affc924ebb8b8c73711e187ae7486cadd9f737bb1279cc7b8",
+      "after": "7edf9354e5ecd67cd57ffdbd5d517fd8baef636ca7e01b8ef0c5175e22528ca2"
+    }
+  ]
+}

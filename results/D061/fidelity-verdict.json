@@ -1,0 +1,15 @@
+{
+  "positions": 416,
+  "prompts": 12,
+  "full_vocabulary": true,
+  "mean_kl_nats": 0.006783311837572786,
+  "median_kl_nats": 2.8105013646896312e-06,
+  "p95_kl_nats": 0.02356509476658364,
+  "top1_agreement": 0.9855769230769231,
+  "prompt_block_bootstrap95_nats": [
+    0.0014232847812995235,
+    0.014139105819962831
+  ],
+  "reference": "/w/runs/2026-10-01-D026-kv2-reference-p2/reference",
+  "inherited_guard_passed": false
+}

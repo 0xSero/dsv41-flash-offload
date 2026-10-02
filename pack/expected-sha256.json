@@ -1,0 +1,69 @@
+{
+ "_note": "sha256 of the overlay pack files produced on the measured host (omarchy, ~/models/DSV41-EXL3-3090-D010) by pack/prepare_pack.py then pack/expand_native_dense.py; source runs D010 (adapter) + D017 (native dense).",
+ "final_files": {
+  "config.json": "55ad6c7ebbc5ed6d558cd10db8b83bf4e7bce927a19c0698e2faa1a031dafbcd",
+  "quantization_config.json": "4b200afc31db18de9c48775f5310c852cb15a54e71ad2a789e7036bd76fc6525",
+  "model.safetensors.index.json": "3d28912075b2fd723b690b44f437215d57cefad12c69c464b8aa6308c343bea1",
+  "host-plan.json": "0044ca9b55d423d45a32b9415fac162ba6db998842722b0f2e66505f6e6bf978"
+ },
+ "grouped_woa": {
+  "layers.0.attn.wo_a.weight": "1f9bfde5b75ed4ff061615ade5744883c6e18d7683ff9ffcdee64d497689cc21",
+  "layers.1.attn.wo_a.weight": "25bbc8e5267d30a2df7bda850f7f199a98232ee03fde406a2fa6b1eafc1153c0",
+  "layers.2.attn.wo_a.weight": "485ed05c62b07219ac06c486ef86edcf6022a338ae5e0d022245096b2fce13c1",
+  "layers.3.attn.wo_a.weight": "ab70a9ab5cde227bc2d0a5a97d932f3557696e5d1a1cf09755549e42a9789fb2",
+  "layers.4.attn.wo_a.weight": "bbbdc2abb5c0c4a3e512d4e5d78b993d16c5465f112e9507157e7b6fd78859dc",
+  "layers.5.attn.wo_a.weight": "d1b101c4eb322aa6bf608f700af5e1ccbe865f89b473eea825c3c51de4b91451",
+  "layers.6.attn.wo_a.weight": "d7e4fcde624139b0e959d0b8f0194278c43db47b1bb8204ce4927d2d5b1468b6",
+  "layers.7.attn.wo_a.weight": "175a7c4cc16edc207f547a6dc9f1732e217dfb941320814ecbf6b9d4c931f6b0",
+  "layers.8.attn.wo_a.weight": "7087f727b42d4dea935067f2ae68dbf34b6f4f083d84034270ca21d17d28aad7",
+  "layers.9.attn.wo_a.weight": "ee023b4bd5f92aa2dfdf34f097a31a0ae198161075cba80c354ab6a1f31c0c6a",
+  "layers.10.attn.wo_a.weight": "95efe27d8d2c641cf38f809e3a2f02c915035e69429aeba67625e66f82502718",
+  "layers.11.attn.wo_a.weight": "043ad88398b5fff333cad710ec434895cb1ad1b6af7252f77df217e8a9379471",
+  "layers.12.attn.wo_a.weight": "e938edc02609340599f14f1531785ad1c87ec79272777351e14ed6bbc8e65335",
+  "layers.13.attn.wo_a.weight": "2e2faf9e964e26e245b68a8f23d741c8e3c72a4deb7077cabe7f30665cde9c8e",
+  "layers.14.attn.wo_a.weight": "c228e2214edc0ee0311475fdc66d738bece9cbeb6b3435e879b0b944e2cd7b07",
+  "layers.15.attn.wo_a.weight": "cb6235f2437ff2fb0b869c9b4932982238c02a297bfac97b39fd36074a408deb",
+  "layers.16.attn.wo_a.weight": "b2cc1eb801ea24312cb859a550c7d3330cc95d17d8791b8c8a71f344d2d0f50d",
+  "layers.17.attn.wo_a.weight": "d71c71b51eedabdcc06e96f4af335dadd998874a1339fa10a5b66be22cebdfbe",
+  "layers.18.attn.wo_a.weight": "c4eefd7fa104a692535dfc648a100076ecbd1095ede609cbf2ed35beb7216686",
+  "layers.19.attn.wo_a.weight": "d16cf85ffad73d013815f8443c970647faec71268bfb2d7800817dec57721468",
+  "layers.20.attn.wo_a.weight": "75973426e423468e02b01d6c4fac85c846c7acc306477fbc12dd3a4d3bdbb149",
+  "layers.21.attn.wo_a.weight": "838f00ad812a9fa14efa3266fca2ffe61ab9bcc4f13d1df2668e8502225c0a35",
+  "layers.22.attn.wo_a.weight": "a669efc26706dfb573c0bd584e0e611c7cec06723d40af397f24eba963b9e5c3",
+  "layers.23.attn.wo_a.weight": "487f012ed371a517ffc47a33ef2f775edf8e26063d5a2ef87e6ec537eeb6c4b5",
+  "layers.24.attn.wo_a.weight": "f7cfeed4ce6897a2c9b75ad830ad3978b49e10a56a529dd4e3511ba2bb3059fd",
+  "layers.25.attn.wo_a.weight": "bdbb504d26d796f4f955801a871055298470376cd175934cbf40a6d771e11f1d",
+  "layers.26.attn.wo_a.weight": "32cf459e8b9102feabdc8c27b84db5d261710dfbdbe20ec958f4427ee1d4b5d8",
+  "layers.27.attn.wo_a.weight": "a0ec524046e4071477b544574b9c3063a13ee43a321cec07a3dc5d6c6c5d0735",
+  "layers.28.attn.wo_a.weight": "b62fc5b0ca648c645dfc199c32658a0899b1043dca3e37268759e77d9c3c2c03",
+  "layers.29.attn.wo_a.weight": "75aa85687091de1847dcd75a9cbb900ed9450b2b679ced41df66969d08959719",
+  "layers.30.attn.wo_a.weight": "cf3afd24502264954266172a525728f5ea43bc341887714727c5bfe400b5000a",
+  "layers.31.attn.wo_a.weight": "b04add8e8d8318cfee64746c79d69ad7ae3743373ac4d602c84bb951cb367005",
+  "layers.32.attn.wo_a.weight": "e2983cb5523a2c29c246131715707169aecf1bc40ed9fdab78255134bddc8b2b",
+  "layers.33.attn.wo_a.weight": "e4846f888dd2e40bed5773b371b0f36ca65feb8eda2d39eddd8920e3ffe2d4ce",
+  "layers.34.attn.wo_a.weight": "8a9804278e91b4e5d3cd66b00975dcf9538332799184d7949f98be8a525fe12d",
+  "layers.35.attn.wo_a.weight": "4aa9cbfcd8abeac50900fe0b71165c8f0589c8a7330e4109d0d0e73cdab6ac31",
+  "layers.36.attn.wo_a.weight": "7d0906f16eb1c32ac57088bdec04a37a9cb75b4cc7404bc653ee9d35582ea6a0",
+  "layers.37.attn.wo_a.weight": "e3d6b05d40af02c6b7693ac09bbcc3155b7d8de26a7939f69439b93a714da853",
+  "layers.38.attn.wo_a.weight": "f0a70939dc081110becfe03f0b3682ba3ad9d724238be3843cb898f9889709a1",
+  "layers.39.attn.wo_a.weight": "c96fb7a08f6e2198c1ffd9140be187a65148e4151578995c4b90efde2f264d98",
+  "mtp.0.attn.wo_a.weight": "91a270cfe73e230ea22bd34c2e6c8dcf8ad3c78730d52d2ede3622e2af7d92a8",
+  "mtp.1.attn.wo_a.weight": "fd83644b30c36ed089fa63d9b833e4d8e9ad8d3159ec8fb38d15377f5448c83a",
+  "mtp.2.attn.wo_a.weight": "a6b10a22e731a0a9b6f6c53a0e620187a582f5040f8d118d676dbb01e83e6a75"
+ },
+ "adapter": {
+  "dense_quant_modules": 235,
+  "weight_names": 190857,
+  "engram_keys": [
+   "layers.14.engram.embed.weight",
+   "layers.14.engram.embed.scale",
+   "layers.1.engram.embed.weight",
+   "layers.1.engram.embed.scale"
+  ]
+ },
+ "native_dense": {
+  "bytes": 37224448,
+  "remaining_dense_quant_modules": 227,
+  "expanded_keys": 11
+ }
+}

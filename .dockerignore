@@ -1,0 +1,6 @@
+.git
+build
+receipts
+pypath
+results
+**/__pycache__

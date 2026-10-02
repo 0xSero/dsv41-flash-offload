@@ -1,0 +1,126 @@
+{
+ "card": "rtx3090",
+ "config": "D061-CPU1-KV1-noDSpark-chunk16384-dma-gemm-fat32",
+ "started": "2026-10-02T11:53:58+0200",
+ "ctx_len": 65536,
+ "protocol": "bench/sweep.py v1",
+ "api": "vllm",
+ "served_model": {
+  "id": "deepseek-v4.1-flash",
+  "object": "model",
+  "created": 1790934838,
+  "owned_by": "vllm",
+  "root": "/models/DSV41-EXL3-3090-D010",
+  "parent": null,
+  "max_model_len": 65536,
+  "permission": [
+   {
+    "id": "modelperm-b1d93df556acb843",
+    "object": "model_permission",
+    "created": 1790934838,
+    "allow_create_engine": false,
+    "allow_sampling": true,
+    "allow_logprobs": true,
+    "allow_search_indices": false,
+    "allow_view": true,
+    "allow_fine_tuning": false,
+    "organization": "*",
+    "group": null,
+    "is_blocking": false
+   }
+  ]
+ },
+ "template": "deepseek",
+ "tol": 0.05,
+ "best_known_before": {
+  "prefill_32768": 2848,
+  "decode_C1": 63.7
+ },
+ "server_args": {
+  "max_running_requests": null,
+  "max_total_num_tokens": null,
+  "chunked_prefill_size": null,
+  "kv_cache_dtype": null,
+  "context_length": 65536,
+  "mem_fraction_static": null,
+  "max_mamba_cache_size": null
+ },
+ "prefill": {
+  "8192": {
+   "median": 565.2,
+   "min": 551.6,
+   "max": 565.2,
+   "n": 3,
+   "all": [
+    551.6,
+    565.2,
+    565.2
+   ]
+  },
+  "32768": {
+   "median": 744.9,
+   "min": 739.0,
+   "max": 749.9,
+   "n": 3,
+   "all": [
+    739.0,
+    744.9,
+    749.9
+   ]
+  }
+ },
+ "decode": {},
+ "status": "PREFILL_ONLY_DONE",
+ "prompt_seed": 1790934838,
+ "prefill_prompt_receipts": [
+  {
+   "tokens": 8192,
+   "rep": 0,
+   "prompt_sha256": "6217ca33b9bdc53c403a0f4b2e86fbad9141a2edefcb7e2a09403f5d0ae0ae0f",
+   "ttft_s": 14.850809151990688
+  },
+  {
+   "tokens": 8192,
+   "rep": 1,
+   "prompt_sha256": "ec5e6ff6bfcac2b56cb7933a6240f3f8e9dffb2df690e1163c8b947cc62297ad",
+   "ttft_s": 14.493307466997067
+  },
+  {
+   "tokens": 8192,
+   "rep": 2,
+   "prompt_sha256": "78791793c488c2f9d6f9d77ed8b7fc1eae370b1fd5b5ebb95a4a119bb6e8aada",
+   "ttft_s": 14.494623056001728
+  },
+  {
+   "tokens": 32768,
+   "rep": 0,
+   "prompt_sha256": "21d9849fa34717dbd38e8ee7dde6f3ffeca8db99dda9e6a8ef026df5425c7b67",
+   "ttft_s": 44.34042505000252
+  },
+  {
+   "tokens": 32768,
+   "rep": 1,
+   "prompt_sha256": "78f2dc17cb274734bc955b644e75bcc2a76705b6bdc45891f4b0890303eab0e0",
+   "ttft_s": 43.991879556997446
+  },
+  {
+   "tokens": 32768,
+   "rep": 2,
+   "prompt_sha256": "a1624c6b908416957eb7d8701ceedec88691f7e77ee6b7547f9723bd0e2e36f6",
+   "ttft_s": 43.698001541997655
+  }
+ ],
+ "gates": {
+  "prefill_8192": {
+   "value": 565.2,
+   "best_known": null,
+   "pass": true
+  },
+  "prefill_32768": {
+   "value": 744.9,
+   "best_known": 2848,
+   "pass": false
+  }
+ },
+ "finished": "2026-10-02T11:57:03+0200"
+}

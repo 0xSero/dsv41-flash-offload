@@ -1,0 +1,97 @@
+{
+  "updated_utc": "2026-10-01T23:07:31.542442+00:00",
+  "arms": [
+    {
+      "run": "runs/2026-10-01-D030-baseline-stability-p2",
+      "status": "RUNNING",
+      "config": "D030-baseline-stability-KV2-dspark5",
+      "kv_gib": 2.0,
+      "prefill": {
+        "8192": {
+          "median": 93.4,
+          "min": 92.9,
+          "max": 93.5,
+          "n": 3,
+          "all": [
+            92.9,
+            93.5,
+            93.4
+          ]
+        },
+        "32768": {
+          "median": 95.8,
+          "min": 95.7,
+          "max": 95.9,
+          "n": 3,
+          "all": [
+            95.9,
+            95.8,
+            95.7
+          ]
+        }
+      },
+      "decode": {
+        "C1": {
+          "tok_s": 4.095000000000001,
+          "ttft_max_s": [
+            3.37,
+            2.82
+          ],
+          "natural_eos": true
+        }
+      },
+      "quality": {
+        "quality.json": {
+          "role": "unchanged GPU baseline stability calibration before diagnostic P2",
+          "repeats": [
+            {
+              "positions": 416,
+              "prompts": 12,
+              "full_vocabulary": true,
+              "mean_kl_nats": 0.0010645830298473108,
+              "median_kl_nats": 7.052400162731848e-08,
+              "p95_kl_nats": 0.005498615363331739,
+              "top1_agreement": 0.9975961538461539,
+              "prompt_block_bootstrap95_nats": [
+                0.00012736584706864108,
+                0.0018353452307624187
+              ],
+              "reference": "/out/reference"
+            },
+            {
+              "positions": 416,
+              "prompts": 12,
+              "full_vocabulary": true,
+              "mean_kl_nats": 0.0009099434389321174,
+              "median_kl_nats": 8.904865130167899e-08,
+              "p95_kl_nats": 0.005184667920711636,
+              "top1_agreement": 0.9951923076923077,
+              "prompt_block_bootstrap95_nats": [
+                0.0001327762451786295,
+                0.001659857243051569
+              ],
+              "reference": "/w/runs/2026-10-01-D026-kv2-reference-p2/reference"
+            }
+          ],
+          "inherited_glm_guard": {
+            "top1_min": 0.988,
+            "mean_kl_max": 0.00103
+          },
+          "guard_results": [
+            false,
+            true
+          ],
+          "bit_exact": false,
+          "optimization_accepted": false
+        }
+      },
+      "resources": {
+        "samples": 559,
+        "min_mem_available_gib": 246.32339096069336,
+        "peak_rss_sum_gib": 236.45824813842773,
+        "peak_cgroup_gib": 220.07045364379883,
+        "peak_gpu_mib_including_desktop": 23548.0
+      }
+    }
+  ]
+}

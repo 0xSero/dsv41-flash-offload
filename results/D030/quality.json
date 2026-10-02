@@ -1,0 +1,43 @@
+{
+  "role": "unchanged GPU baseline stability calibration before diagnostic P2",
+  "repeats": [
+    {
+      "positions": 416,
+      "prompts": 12,
+      "full_vocabulary": true,
+      "mean_kl_nats": 0.0010645830298473108,
+      "median_kl_nats": 7.052400162731848e-08,
+      "p95_kl_nats": 0.005498615363331739,
+      "top1_agreement": 0.9975961538461539,
+      "prompt_block_bootstrap95_nats": [
+        0.00012736584706864108,
+        0.0018353452307624187
+      ],
+      "reference": "/out/reference"
+    },
+    {
+      "positions": 416,
+      "prompts": 12,
+      "full_vocabulary": true,
+      "mean_kl_nats": 0.0009099434389321174,
+      "median_kl_nats": 8.904865130167899e-08,
+      "p95_kl_nats": 0.005184667920711636,
+      "top1_agreement": 0.9951923076923077,
+      "prompt_block_bootstrap95_nats": [
+        0.0001327762451786295,
+        0.001659857243051569
+      ],
+      "reference": "/w/runs/2026-10-01-D026-kv2-reference-p2/reference"
+    }
+  ],
+  "inherited_glm_guard": {
+    "top1_min": 0.988,
+    "mean_kl_max": 0.00103
+  },
+  "guard_results": [
+    false,
+    true
+  ],
+  "bit_exact": false,
+  "optimization_accepted": false
+}
