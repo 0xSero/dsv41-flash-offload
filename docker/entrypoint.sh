@@ -100,7 +100,7 @@ if [ "$DSV41_CPU_TIER" = "1" ]; then
         grep -qw "$f" /proc/cpuinfo || die "CPU lacks $f; the CPU tier needs AVX2+FMA+F16C (or -e DSV41_CPU_TIER=0)"
     done
 fi
-NEED_GB=215   # measured: MemAvailable fell by 196-199 GiB from container start to ready (D030, D061, D107, D117)
+NEED_GB=215   # measured: MemAvailable fell by 195-199 GiB from container start to ready (D030, D061, D107, D117)
 AVAIL_GB=$(awk '/MemAvailable/{printf "%d", $2/1048576}' /proc/meminfo)
 if [ -r /sys/fs/cgroup/memory.max ] && [ "$(cat /sys/fs/cgroup/memory.max)" != "max" ]; then
     LIM_GB=$(( $(cat /sys/fs/cgroup/memory.max) / 1073741824 ))

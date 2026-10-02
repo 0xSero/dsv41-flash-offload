@@ -36,7 +36,7 @@ decode (FULL_DECODE_ONLY, sizes 1-24).
 | **D118 (pending)** | D117 + elastic cache (`DSV41_EC_ELASTIC=1`), this image's configuration | pending | pending | pending | pending | pending | 1 GiB | 16,384 | being measured |
 
 Units are tok/s. C1 at 32k context: D030 4.11, D107 21.33. D117 was captured at 2026-10-02T12:41+02:00 while its
-sweep was still running. D107 had a cache hit rate of 0.408. Host RAM: MemAvailable fell by 196-199 GiB from
+sweep was still running. D107 had a cache hit rate of 0.408. Host RAM: MemAvailable fell by 195-199 GiB from
 container start to ready in D030, D061, D107 and D117 (`memory-*.txt` in each results directory). VRAM at ready:
 14,165-15,991 MiB including about 1 GB for the desktop.
 
@@ -83,7 +83,7 @@ The CPU computes them from DDR4 in about 1 ms per layer while the GPU handles th
 ## Host requirements
 
 - 1x 24 GB NVIDIA GPU, sm_86 (RTX 3090 measured), with a driver that supports CUDA 13.0.
-- About 215 GiB of host RAM available to the container (measured 196-199 GiB pinned and allocated, plus headroom),
+- About 215 GiB of host RAM available to the container (measured 195-199 GiB pinned and allocated, plus headroom),
   `--ulimit memlock=-1`, and `--cap-add IPC_LOCK`.
 - An x86-64 CPU with AVX2, FMA and F16C. The CPU tier defaults to cores 2-23 and 22 threads (`DSV41_CT_CPUS`,
   `DSV41_CT_THREADS`). Change them on smaller hosts.
