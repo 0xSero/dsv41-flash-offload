@@ -82,6 +82,7 @@ export DSV41_EC_ELASTIC=${DSV41_EC_ELASTIC:-1}
 export DSV41_CPU_TIER=${DSV41_CPU_TIER:-1}
 export DSV41_CT_MAXBSZ=${DSV41_CT_MAXBSZ:-512}
 export DSV41_CT_HYB_MAX=${DSV41_CT_HYB_MAX:-2048}   # lone 513..2048-token steps: CPU tier takes the trailing DMA batches
+export DSV41_CLAMP_MAX_TOKENS=${DSV41_CLAMP_MAX_TOKENS:-1}   # near-full-window requests with max_tokens get the room left instead of HTTP 400
 export DSV41_CT_MAXN=${DSV41_CT_MAXN:-384}
 export DSV41_CT_B=${DSV41_CT_B:-0.20}
 export DSV41_CT_TOK=${DSV41_CT_TOK:-0.35}

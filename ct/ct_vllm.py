@@ -487,6 +487,7 @@ def install(X):
         GMR.GPUModelRunner.execute_model = execute_model
         _log("step hook installed on %s (EC %s)" % (modname, os.environ.get("DSV41_EC", "0")))
     install_decode_share()
+    install_ctx_clamp()
     _log("installed")
 
 
@@ -550,3 +551,27 @@ def install_decode_share():
         return False
     C.EngineCore._should_throttle_prefills = should_throttle
     _log(f"decode share installed: f {f} cap {cap} s")
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Near-full-context requests (DSV41_CLAMP_MAX_TOKENS=1). vLLM validates prompt_tokens <= max_model_len - max_tokens at
+# tokenization and returns HTTP 400 otherwise. Agents send max_tokens on compaction / summary calls exactly when the
+# conversation is near the window (Pi: 0.8 x reserve ~= 13k with a ~250k prompt), so those calls failed. Validate the
+# prompt against the whole window instead; vLLM's get_max_tokens then gives the request all the room that is left.
+def install_ctx_clamp():
+    if os.environ.get("DSV41_CLAMP_MAX_TOKENS", "0") != "1":
+        return
+    try:
+        from vllm.renderers import params as P
+    except Exception as exc:
+        _log(f"ctx clamp: unavailable ({exc!r})"); return
+    if getattr(P.TokenizeParams, "_dsv41_clamp", False):
+        return
+
+    def max_input_tokens(self):
+        if self.max_total_tokens is None:
+            return None
+        return self.max_total_tokens - min(int(self.max_output_tokens or 0), 1)
+    P.TokenizeParams.max_input_tokens = property(max_input_tokens)
+    P.TokenizeParams._dsv41_clamp = True
+    _log("ctx clamp installed: prompts validated against the full window; max_tokens shrinks to the room left")
