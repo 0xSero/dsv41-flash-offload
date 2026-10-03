@@ -12,7 +12,7 @@
 
 // policy p[]: 0 t_zc (ms per zero-copy miss), 1 t_hit (ms per GPU-resident expert), 2 cpu_a (ms fixed per CPU job),
 // 3 cpu_b (ms per CPU expert), 4 cpu_tok (extra fraction per extra token of an expert), 5 max_cpu, 6 force_n (-1 = cost
-// model), 7 handshake (1 = publish even empty jobs)
+// model), 7 handshake (1 = publish even empty jobs), 8 x already in hx (skip the in-kernel host copy)
 __global__ void ft_split_k(const int64_t* __restrict__ sel, const float* __restrict__ w, const __half* __restrict__ z,
     int n, int bsz, int topk, int H, int E, const int* __restrict__ slotof, const float* __restrict__ score,
     const float* __restrict__ p, volatile long long* ctrl, __half* hx, int* hpicks, long long* seqc, int li,
@@ -84,7 +84,7 @@ __global__ void ft_split_k(const int64_t* __restrict__ sel, const float* __restr
     }
     if (publish)
     {
-        const int nx = bsz * H / 8;
+        const int nx = p[8] > 0.5f ? 0 : bsz * H / 8;   // p[8] = 1: x already in hx (copy-engine DtoH before this kernel)
         for (int i = t; i < nx; i += blockDim.x) reinterpret_cast<int4*>(hx)[i] = reinterpret_cast<const int4*>(z)[i];
         __threadfence_system();
         __syncthreads();

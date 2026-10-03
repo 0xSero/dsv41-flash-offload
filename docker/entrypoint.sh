@@ -58,7 +58,7 @@ esac
 #   decode:  VRAM mirror cache of the hottest experts (DSV41_EC=1, elastic: released before > 512-token steps, rewarmed
 #            after 4 decode steps) + AVX2 CPU tier computing cold misses from the pinned copy (DSV41_CPU_TIER=1);
 #   prefix caching on (V4.1's ratio-2 compressor ring is empty at block-aligned hits: exact, measured);
-#   hybrid (D139): a lone 513..1536-token step streams most cold experts and lets the CPU tier compute the trailing
+#   hybrid (D139): a lone 513..2048-token step streams most cold experts and lets the CPU tier compute the trailing
 #            DMA batches in parallel (agent turns ~1.5-2 s faster);
 #   scheduler: decode share 0.25 during long prefills, long-prompt chunks capped at 7168 only while >= 2 requests compete;
 #   Engram n-gram tables: memory-mapped from NVMe, rows gathered per step by a CUDA host callback (DSV41_ENGRAM_DISK=1).
@@ -81,7 +81,7 @@ export DSV41_EC_ASYNC=${DSV41_EC_ASYNC:-1}
 export DSV41_EC_ELASTIC=${DSV41_EC_ELASTIC:-1}
 export DSV41_CPU_TIER=${DSV41_CPU_TIER:-1}
 export DSV41_CT_MAXBSZ=${DSV41_CT_MAXBSZ:-512}
-export DSV41_CT_HYB_MAX=${DSV41_CT_HYB_MAX:-1536}   # lone 513..1536-token steps: CPU tier takes the trailing DMA batches
+export DSV41_CT_HYB_MAX=${DSV41_CT_HYB_MAX:-2048}   # lone 513..2048-token steps: CPU tier takes the trailing DMA batches
 export DSV41_CT_MAXN=${DSV41_CT_MAXN:-384}
 export DSV41_CT_B=${DSV41_CT_B:-0.20}
 export DSV41_CT_TOK=${DSV41_CT_TOK:-0.35}

@@ -67,13 +67,13 @@ def _init(H, I, dev):
     S["seqc"] = torch.zeros(1, dtype=torch.int64, device=dev)
     S["stats"] = torch.zeros(8, dtype=torch.int64, device=dev)
     S["pol"] = torch.tensor([_f("DSV41_CT_TZC", 0.58), _f("DSV41_CT_THIT", 0.03), _f("DSV41_CT_A", 0.11), _f("DSV41_CT_B", 0.16),
-                             _f("DSV41_CT_TOK", 0.2), _f("DSV41_CT_MAXN", 64), _f("DSV41_CT_FORCE_N", -1), 0.0],
+                             _f("DSV41_CT_TOK", 0.2), _f("DSV41_CT_MAXN", 64), _f("DSV41_CT_FORCE_N", -1), 0.0, 0.0],
                             dtype=torch.float32, device=dev)
     S["timeout_ns"] = int(_f("DSV41_CT_TIMEOUT_S", 2) * 1e9)
     S["sel"] = torch.empty(S["maxpicks"], dtype=torch.long, device=dev)
     S["w"] = torch.empty(S["maxpicks"], dtype=torch.float32, device=dev)
     # hybrid: every miss goes to the CPU (force_n = all); the "misses" are exactly the tail-batch experts (fake slotof)
-    S["pol_hyb"] = torch.tensor([0.54, 0.0, 0.0, 0.0, 0.0, 4096.0, 4096.0, 0.0], dtype=torch.float32, device=dev)
+    S["pol_hyb"] = torch.tensor([0.54, 0.0, 0.0, 0.0, 0.0, 4096.0, 4096.0, 0.0, 1.0], dtype=torch.float32, device=dev)
     S["stats_hyb"] = torch.zeros(8, dtype=torch.int64, device=dev)
     S["hyb_n"] = 0
     threads = int(os.environ.get("DSV41_CT_THREADS", "22"))
@@ -196,6 +196,7 @@ def _fused(x2d, ids, weights, layer, inners, expert_map, limit):
             n = ids.numel()
             so, wo = S["sel"][:n], S["w"][:n]
             z = x2d if (x2d.dtype == torch.half and x2d.is_contiguous()) else x2d.half().contiguous()
+            S["hx"][: z.numel()].view_as(z).copy_(z, non_blocking=True)   # copy engine, same stream, before ft_split publishes
             cnt = ct.setdefault("hyb_cnt", torch.zeros(ct["E"], dtype=torch.int32, device=S["dev"]))
             _CU.ft_split(ids.contiguous().long(), weights.contiguous().float(), z, ct["E"], fake, ct["score"], S["pol_hyb"],
                          S["ctrl"].data_ptr(), S["hx"].data_ptr(), S["picks"].data_ptr(), S["seqc"], ct["li"], so, wo,

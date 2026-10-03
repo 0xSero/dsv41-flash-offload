@@ -104,7 +104,22 @@ void run_job(int li, int ntok, int np)
 {
     const int H = T->H;
     T->xf.resize(size_t(std::max(ntok, 1)) * H);
-    for (size_t i = 0; i < size_t(ntok) * H; ++i) T->xf[i] = h2f(T->hx[i]);
+    const size_t nx = size_t(ntok) * H;
+    if (nx < (size_t(1) << 15)) { for (size_t i = 0; i < nx; ++i) T->xf[i] = h2f(T->hx[i]); }
+    else
+    {
+        // dsv41 hybrid: thousands of tokens per job -> convert on the whole pool (8 halves per F16C op)
+        struct Cv { const uint16_t* h; float* f; size_t n; } cv{ T->hx, T->xf.data(), nx };
+        T->pool.run([](void* c, int w, int nw) {
+            auto* a = static_cast<Cv*>(c);
+            const size_t per = ((a->n + size_t(nw) - 1) / size_t(nw) + 7) & ~size_t(7);
+            const size_t lo = std::min(a->n, per * size_t(w)), hi = std::min(a->n, lo + per);
+            size_t i = lo;
+            for (; i + 8 <= hi; i += 8)
+                _mm256_storeu_ps(a->f + i, _mm256_cvtph_ps(_mm_loadu_si128(reinterpret_cast<const __m128i*>(a->h + i))));
+            for (; i < hi; ++i) a->f[i] = h2f(a->h[i]);
+        }, &cv);
+    }
     std::vector<std::vector<std::pair<int, float>>> route(ntok);
     for (int k = 0; k < np; ++k)
     {
