@@ -17,6 +17,7 @@ python3 runtime/patch_runtime.py      > receipts/runtime-patch-receipt.json
 python3 runtime/patch_dma_stock.py    > receipts/dma-patch-receipt.json
 python3 runtime/patch_dma_segments.py > receipts/dma-segments-receipt.json
 python3 runtime/patch_dma_gemm.py     > receipts/dma-gemm-receipt.json
+python3 runtime/patch_dma_prefetch.py > receipts/dma-prefetch-receipt.json
 
 P=$(python3 -c "import vllm_exl3,os;print(os.path.dirname(vllm_exl3.__file__))")
 grep -q '_dsct.install' "$P/exl3.py" || printf '\ntry:\n    import sys as _s, ct.ct_vllm as _dsct\n    _dsct.install(_s.modules[__name__])\nexcept Exception as _e:\n    print("dsv41 ct install failed", repr(_e), flush=True)\n' >> "$P/exl3.py"

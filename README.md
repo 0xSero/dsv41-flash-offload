@@ -15,7 +15,12 @@ Status: **candidate**. The default launch (262,144-token context, 1.5 GiB fp8 KV
 **D119** at C1 from 8k to 261k tokens: prefill 589-813 tok/s, decode 16.4-20.9 tok/s (table below). Prefill
 fidelity of the staged-DMA path is just outside the campaign's inherited guard (see [Quality](#quality)).
 
-## Current default: D130 (2026-10-03)
+## Current default: D135 (2026-10-03)
+
+D130 below plus a tuned CPU/GPU split (C1/C2/C4 19.8/23.0/25.6) and cross-layer DMA prefetch (prefill 8k/64k/261k
+787/769/694 tok/s). See [results/D130.md](results/D130.md).
+
+### D130
 
 Prefix caching (exact), CPU-tier split path for <= 512-token steps, safe elastic expert cache, 8 staging slots,
 decode share during long prefills. Decode C1/C2/C4 18.8/22.0/23.5 tok/s (was 15.3/16.7/17.6); prefill 8k/64k/261k
