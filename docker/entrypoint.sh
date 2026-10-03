@@ -49,12 +49,16 @@ case "${1:-}" in
     *) exec "$@" ;;
 esac
 
-# ---- D118 runtime defaults; every value can be overridden with -e ------------------------------------------------
+# ---- D130 runtime defaults; every value can be overridden with -e ------------------------------------------------
 #   experts: all 15,360 routed experts pinned in host RAM (host-plan.json), read zero-copy / DMA-staged by the GPU;
-#   prefill: 16,384-token chunks, cold experts streamed into VRAM slots by the copy engine (EXL3_HOST_DMA=1, batches of
-#            8, 2 slots), busy experts reconstructed to FP16 and run as a GEMM (EXL3_DMA_GEMM=1, fat threshold 32);
-#   decode:  VRAM mirror cache of the hottest experts (DSV41_EC=1, elastic: sized from free VRAM minus 900 MB) + AVX2
-#            CPU tier computing cold misses from the pinned copy (DSV41_CPU_TIER=1);
+#   prefill: 8,192-token chunks (16k chunks OOM on 24 GB); steps > 512 tokens stream every cold expert into 8 VRAM staging
+#            slots x 8 experts (EXL3_HOST_DMA=1, next-layer prefetch), busy experts reconstructed to FP16 GEMMs
+#            (EXL3_DMA_GEMM=1, fat threshold 32); steps <= 512 tokens (agent turns, admissions) run the decode split
+#            path instead: CPU tier + zero-copy over the touched experts only (DSV41_CT_MAXBSZ=512, DMA_MIN_TOKENS=513);
+#   decode:  VRAM mirror cache of the hottest experts (DSV41_EC=1, elastic: released before > 512-token steps, rewarmed
+#            after 4 decode steps) + AVX2 CPU tier computing cold misses from the pinned copy (DSV41_CPU_TIER=1);
+#   prefix caching on (V4.1's ratio-2 compressor ring is empty at block-aligned hits: exact, measured);
+#   scheduler: decode share 0.25 during long prefills, long-prompt chunks capped at 7168 only while >= 2 requests compete;
 #   Engram n-gram tables: memory-mapped from NVMe, rows gathered per step by a CUDA host callback (DSV41_ENGRAM_DISK=1).
 export DSV41_ENGRAM_DISK=${DSV41_ENGRAM_DISK:-1}
 export DSV41_ENGRAM_LIB=${DSV41_ENGRAM_LIB:-$ROOT/build/engram_disk.so}
@@ -64,12 +68,23 @@ export VLLM_EXL3_FAT_THRESHOLD=${VLLM_EXL3_FAT_THRESHOLD:-32}
 export EXL3_DMA_GEMM=${EXL3_DMA_GEMM:-1}
 export EXL3_HOST_DMA=${EXL3_HOST_DMA:-1}
 export EXL3_HOST_DMA_BATCH=${EXL3_HOST_DMA_BATCH:-8}
-export EXL3_HOST_DMA_SLOTS=${EXL3_HOST_DMA_SLOTS:-2}
+export EXL3_HOST_DMA_SLOTS=${EXL3_HOST_DMA_SLOTS:-8}
+export EXL3_HOST_DMA_MIN_TOKENS=${EXL3_HOST_DMA_MIN_TOKENS:-513}
 export EXL3_HOST_DMA_COLD_FUSED=${EXL3_HOST_DMA_COLD_FUSED:-1}
 export DSV41_EC=${DSV41_EC:-1}
-export DSV41_EC_MARGIN_MB=${DSV41_EC_MARGIN_MB:-900}
+export DSV41_EC_MARGIN_MB=${DSV41_EC_MARGIN_MB:-1500}
+export DSV41_EC_PREFILL_TOKENS=${DSV41_EC_PREFILL_TOKENS:-512}
+export DSV41_EC_REWARM_AFTER=${DSV41_EC_REWARM_AFTER:-4}
+export DSV41_EC_ASYNC=${DSV41_EC_ASYNC:-1}
 export DSV41_EC_ELASTIC=${DSV41_EC_ELASTIC:-1}
 export DSV41_CPU_TIER=${DSV41_CPU_TIER:-1}
+export DSV41_CT_MAXBSZ=${DSV41_CT_MAXBSZ:-512}
+export DSV41_CT_MAXN=${DSV41_CT_MAXN:-384}
+export DSV41_CT_B=${DSV41_CT_B:-0.24}
+export DSV41_CT_TOK=${DSV41_CT_TOK:-0.35}
+export DSV41_DECODE_SHARE=${DSV41_DECODE_SHARE:-0.25}
+export DSV41_LONG_PREFILL_WHEN_WAITING=${DSV41_LONG_PREFILL_WHEN_WAITING:-7168}
+export PYTORCH_CUDA_ALLOC_CONF=${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}
 export DSV41_CT_BUILD=${DSV41_CT_BUILD:-/root/.cache/dsv41_ct}
 export OMP_NUM_THREADS=${OMP_NUM_THREADS:-16}
 export VLLM_PLUGINS=${VLLM_PLUGINS:-vllm_exl3}
@@ -80,7 +95,7 @@ export PYTHONUNBUFFERED=1
 
 MAX_LEN=${DSV41_MAX_MODEL_LEN:-262144}
 KV_BYTES=${DSV41_KV_CACHE_BYTES:-1610612736}     # 1.5 GiB = 297,224 fp8 tokens at 262144 (D119); 1 GiB is refused for 262144
-CHUNK=${DSV41_MAX_NUM_BATCHED_TOKENS:-16384}
+CHUNK=${DSV41_MAX_NUM_BATCHED_TOKENS:-8192}
 PORT=${PORT:-8000}
 
 # API key: VLLM_API_KEY (env) or DSV41_API_KEY_FILE (a mounted file). vLLM reads VLLM_API_KEY itself, so the key never
@@ -117,7 +132,7 @@ ARGS=("$PACK" --host 0.0.0.0 --port "$PORT" --tensor-parallel-size 1 --quantizat
       --served-model-name "${SERVED_NAME:-deepseek-v4.1-flash}" --max-logprobs -1
       --max-model-len "$MAX_LEN" --max-num-seqs 4 --max-num-batched-tokens "$CHUNK"
       --kv-cache-dtype fp8 --kv-cache-memory "$KV_BYTES" --gpu-memory-utilization 0.90
-      --no-enable-prefix-caching --language-model-only --tokenizer-mode deepseek_v41 --trust-remote-code
+      --enable-prefix-caching --language-model-only --tokenizer-mode deepseek_v41 --trust-remote-code
       --disable-custom-all-reduce --compilation-config '{"cudagraph_mode":"FULL_DECODE_ONLY","custom_ops":["all"]}'
       --cudagraph-capture-sizes 1 2 4 6 8 12 16 24
       --enable-auto-tool-choice --tool-call-parser deepseek_v41 --reasoning-parser deepseek_v41)

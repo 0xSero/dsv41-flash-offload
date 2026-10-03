@@ -15,6 +15,13 @@ Status: **candidate**. The default launch (262,144-token context, 1.5 GiB fp8 KV
 **D119** at C1 from 8k to 261k tokens: prefill 589-813 tok/s, decode 16.4-20.9 tok/s (table below). Prefill
 fidelity of the staged-DMA path is just outside the campaign's inherited guard (see [Quality](#quality)).
 
+## Current default: D130 (2026-10-03)
+
+Prefix caching (exact), CPU-tier split path for <= 512-token steps, safe elastic expert cache, 8 staging slots,
+decode share during long prefills. Decode C1/C2/C4 18.8/22.0/23.5 tok/s (was 15.3/16.7/17.6); prefill 8k/64k/261k
+709.6/698.1/620.4 tok/s; a cached 131k-token agent turn reaches its first token in 0.76 s instead of 200.8 s; 30-min
+4-worker soak 0 errors / 0 OOM. Details and before/after table: [results/D130.md](results/D130.md).
+
 ## Measured
 
 Host: AMD EPYC 7443P (24 cores, SMT on, Zen 3), 503 GiB DDR4 (8 channels), 1x RTX 3090 24 GB on PCIe 4.0 x16,

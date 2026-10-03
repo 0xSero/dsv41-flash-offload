@@ -236,7 +236,14 @@ def ec_step():
     if os.environ.get("DSV41_EC", "0") != "1" or EC["N"] < 0:
         return
     if EC.get("released"):
+        # rewarm only after DSV41_EC_REWARM_AFTER consecutive decode-sized steps (agent loops alternate tool results and
+        # decode; rewarming between them would copy the pool back and forth)
         if EC.get("last_ntok", 0) <= int(os.environ.get("DSV41_EC_PREFILL_TOKENS", "64")):
+            EC["calm"] = EC.get("calm", 0) + 1
+        else:
+            EC["calm"] = 0
+        if EC["calm"] >= int(os.environ.get("DSV41_EC_REWARM_AFTER", "4")):
+            EC["calm"] = 0
             ec_rewarm()
         return
     if EC["N"] == 0:
@@ -337,7 +344,8 @@ def ec_release():
     for k in ("pool", "s13", "s2"):
         EC.pop(k, None)
     EC["N"] = 0; EC["releases"] = EC.get("releases", 0) + 1
-    EC["released"] = True
+    EC["released"] = True; EC["calm"] = 0
+    torch.cuda.empty_cache()   # hand the pool back to the driver too, so non-PyTorch allocations can use it
 
 
 @torch.inference_mode()
@@ -424,4 +432,66 @@ def install(X):
             return r
         GMR.GPUModelRunner.execute_model = execute_model
         _log("step hook installed on %s (EC %s)" % (modname, os.environ.get("DSV41_EC", "0")))
+    install_decode_share()
     _log("installed")
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Decode share during long prefills (DSV41_DECODE_SHARE=f, 0 = off). On this box every prefill step streams all routed
+# experts (8-13 s per chunk) and running decodes only advance one token per such step. After a step that carried
+# prefill and took T seconds, the scheduler is allowed decode-only steps for up to f*T seconds (vLLM's DP
+# prefill-deferral path: running chunks and new prefills wait, decodes run), then the next prefill chunk goes.
+# f=0.25 costs prefill ~20 % wall time while other streams keep decoding at ~f/(1+f) of their solo rate.
+DS = {"allow": 0.0, "last_t": None, "last_prefill": False, "throttled": 0}
+
+
+def install_decode_share():
+    f = _f("DSV41_DECODE_SHARE", 0.0)
+    if f <= 0:
+        return
+    import time as _t
+    try:
+        from vllm.v1.engine import core as C
+        from vllm.v1.core.sched import scheduler as SM
+    except Exception as exc:
+        _log(f"decode share: unavailable ({exc!r})"); return
+    cap = _f("DSV41_DECODE_SHARE_CAP_S", 10.0)
+    orig_sched = SM.Scheduler.schedule
+
+    lpt = int(_f("DSV41_LONG_PREFILL_WHEN_WAITING", 0))
+
+    def schedule(self, throttle_prefills=False, _o=orig_sched):
+        if lpt > 0:
+            # cap a long prompt's chunk only while other requests wait, so they ride along in the same step; a lone
+            # long prompt keeps full chunks
+            prefilling = sum(1 for r in self.running if r.num_computed_tokens < r.num_prompt_tokens)
+            self.scheduler_config.long_prefill_token_threshold = lpt if len(self.waiting) + prefilling >= 2 else 0
+        out = _o(self, throttle_prefills)
+        try:
+            n = out.num_scheduled_tokens
+            DS["last_prefill"] = any(v > 1 for v in n.values()) if n else False
+        except Exception:
+            DS["last_prefill"] = False
+        return out
+    SM.Scheduler.schedule = schedule
+
+    def should_throttle(self):
+        now = _t.monotonic()
+        if DS["last_t"] is not None:
+            dt = now - DS["last_t"]
+            if DS["last_prefill"]:
+                DS["allow"] = min(cap, DS["allow"] + f * dt)
+            else:
+                DS["allow"] = max(0.0, DS["allow"] - dt)
+        DS["last_t"] = now
+        sch = self.scheduler
+        decoding = any(not r.is_prefill_chunk and r.num_computed_tokens >= r.num_prompt_tokens for r in sch.running)
+        # never hold back new arrivals: with --long-prefill-token-threshold below the chunk budget they ride along in
+        # the next prefill step instead of queueing behind a long prompt
+        if DS["allow"] > 0 and decoding and not sch.waiting:
+            sch.prefill_capacity_bound = False
+            DS["throttled"] += 1
+            return True
+        return False
+    C.EngineCore._should_throttle_prefills = should_throttle
+    _log(f"decode share installed: f {f} cap {cap} s")
