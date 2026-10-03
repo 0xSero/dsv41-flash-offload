@@ -56,11 +56,13 @@ def _f(k, d):
 def _init(H, I, dev):
     _build()
     maxbsz = int(os.environ.get("DSV41_CT_MAXBSZ", "32"))
-    S.update(H=H, I=I, dev=dev, maxbsz=maxbsz, maxpicks=8 * maxbsz)
+    hyb = int(os.environ.get("DSV41_CT_HYB_MAX", "0"))     # hybrid DMA + CPU-tail range (maxbsz, hyb]; 0 = off
+    buf = max(maxbsz, hyb)
+    S.update(H=H, I=I, dev=dev, maxbsz=maxbsz, maxpicks=8 * buf, hyb_max=hyb)
     S["ctrl"] = torch.zeros(16, dtype=torch.int64).pin_memory()
-    S["hx"] = torch.zeros(maxbsz * H, dtype=torch.half).pin_memory()
+    S["hx"] = torch.zeros(buf * H, dtype=torch.half).pin_memory()
     S["picks"] = torch.zeros(S["maxpicks"] * 3, dtype=torch.int32).pin_memory()
-    S["hout"] = torch.zeros(maxbsz * H, dtype=torch.float32).pin_memory()
+    S["hout"] = torch.zeros(buf * H, dtype=torch.float32).pin_memory()
     S["dflag"] = torch.zeros(1, dtype=torch.int64, device=dev)
     S["seqc"] = torch.zeros(1, dtype=torch.int64, device=dev)
     S["stats"] = torch.zeros(8, dtype=torch.int64, device=dev)
@@ -70,6 +72,10 @@ def _init(H, I, dev):
     S["timeout_ns"] = int(_f("DSV41_CT_TIMEOUT_S", 2) * 1e9)
     S["sel"] = torch.empty(S["maxpicks"], dtype=torch.long, device=dev)
     S["w"] = torch.empty(S["maxpicks"], dtype=torch.float32, device=dev)
+    # hybrid: every miss goes to the CPU (force_n = all); the "misses" are exactly the tail-batch experts (fake slotof)
+    S["pol_hyb"] = torch.tensor([0.54, 0.0, 0.0, 0.0, 0.0, 4096.0, 4096.0, 0.0], dtype=torch.float32, device=dev)
+    S["stats_hyb"] = torch.zeros(8, dtype=torch.int64, device=dev)
+    S["hyb_n"] = 0
     threads = int(os.environ.get("DSV41_CT_THREADS", "22"))
     nl = int(os.environ.get("DSV41_CT_LAYERS", "40"))
     _H.tier_init(threads, _cpus(), S["ctrl"], S["hx"], S["picks"], S["hout"], int(os.environ.get("DSV41_CT_MODE", "-1")),
@@ -154,9 +160,56 @@ _ORIG = {}
 _N = {"calls": 0}
 
 
+def _hyb_tail(layer, T):
+    """Number of trailing DMA batches the CPU tier takes for a T-token step: balance the CPU cost of those experts
+    (measured: ~DSV41_HYB_C0 + DSV41_HYB_C1*(rows-1) ms per expert, plus a per-token input cost) against the DMA stream
+    of the rest (DSV41_HYB_DMA ms per expert)."""
+    D = getattr(layer, "_exl3_dma", None)
+    if D is None:
+        return 0, None
+    E = layer._ct["E"]; nb = len(D["batches"]); B = D["batches"][0][1] - D["batches"][0][0]
+    rows = 6.0 * T / E
+    c_cpu = _f("DSV41_HYB_C0", 0.24) + _f("DSV41_HYB_C1", 0.085) * max(0.0, rows - 1)
+    c_dma = _f("DSV41_HYB_DMA", 0.54)
+    fixed = _f("DSV41_HYB_TOK_US", 6.0) * T / 1000.0          # host fp16->fp32 input conversion etc. (ms)
+    n_cpu = max(0.0, (E * c_dma - fixed) / (c_dma + c_cpu))
+    kc = int(n_cpu // B)
+    kc = max(0, min(kc, nb - 8, int(_f("DSV41_HYB_MAX_BATCHES", 24))))
+    return kc, D
+
+
 def _fused(x2d, ids, weights, layer, inners, expert_map, limit):
     ct = getattr(layer, "_ct", None)
     T = x2d.shape[0]
+    if (ct is not None and S["started"] and expert_map is None and S.get("hyb_max", 0) and S["maxbsz"] < T <= S["hyb_max"]
+            and (S.get("solo", True) or os.environ.get("DSV41_HYB_SOLO_ONLY", "1") != "1")
+            and ids.numel() <= S["maxpicks"] and not torch.cuda.is_current_stream_capturing()):
+        kc, D = _hyb_tail(layer, T)
+        if kc > 0:
+            fake = ct.setdefault("hyb_slot", {}).get(kc)
+            if fake is None:
+                fake = torch.zeros(ct["E"], dtype=torch.int32)
+                i0 = D["batches"][len(D["batches"]) - kc][0]
+                for e in D["h13"].cold[i0:]:
+                    fake[int(e)] = -1
+                fake = ct["hyb_slot"][kc] = fake.to(S["dev"])
+            n = ids.numel()
+            so, wo = S["sel"][:n], S["w"][:n]
+            z = x2d if (x2d.dtype == torch.half and x2d.is_contiguous()) else x2d.half().contiguous()
+            cnt = ct.setdefault("hyb_cnt", torch.zeros(ct["E"], dtype=torch.int32, device=S["dev"]))
+            _CU.ft_split(ids.contiguous().long(), weights.contiguous().float(), z, ct["E"], fake, ct["score"], S["pol_hyb"],
+                         S["ctrl"].data_ptr(), S["hx"].data_ptr(), S["picks"].data_ptr(), S["seqc"], ct["li"], so, wo,
+                         S["dflag"], S["stats_hyb"], cnt)
+            layer._dsv41_cpu_tail = kc
+            try:
+                out = _ORIG["fused"](x2d, so.view(ids.shape), wo.view(weights.shape).to(weights.dtype), layer, inners, None, limit)
+            finally:
+                layer._dsv41_cpu_tail = 0
+            _CU.ft_combine(out, S["dflag"], S["ctrl"].data_ptr(), S["hout"].data_ptr(), S["stats_hyb"], S["timeout_ns"])
+            S["hyb_n"] += 1
+            if S["hyb_n"] in (1, 40, 4000):
+                _log(f"hybrid: T {T} cpu tail {kc} batches (step call {S['hyb_n']})")
+            return out
     if ct is None or not S["started"] or T > S["maxbsz"] or expert_map is not None or ids.numel() > S["maxpicks"]:
         return _ORIG["fused"](x2d, ids, weights, layer, inners, expert_map, limit)
     n = ids.numel()
@@ -467,6 +520,7 @@ def install_decode_share():
             prefilling = sum(1 for r in self.running if r.num_computed_tokens < r.num_prompt_tokens)
             self.scheduler_config.long_prefill_token_threshold = lpt if len(self.waiting) + prefilling >= 2 else 0
         out = _o(self, throttle_prefills)
+        S["solo"] = len(self.running) + len(self.waiting) <= 1   # hybrid DMA+CPU only for a lone request
         try:
             n = out.num_scheduled_tokens
             DS["last_prefill"] = any(v > 1 for v in n.values()) if n else False
