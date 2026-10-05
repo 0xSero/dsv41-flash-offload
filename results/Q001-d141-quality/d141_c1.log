@@ -1,0 +1,11 @@
+{"name": "needle_8k", "copy": 0, "score": {"facts": 3}, "finish": "stop", "wall_s": 27.0, "out_tok": 247}
+{"name": "needle_64k", "copy": 0, "score": {"facts": 3}, "finish": "stop", "wall_s": 116.1, "out_tok": 389}
+{"name": "needle_200k", "copy": 0, "score": {"facts": 3}, "finish": "stop", "wall_s": 332.5, "out_tok": 326}
+{"name": "code_lru", "copy": 0, "score": {"pass": 1}, "finish": "stop", "wall_s": 9.2, "out_tok": 133}
+{"name": "code_rpn", "copy": 0, "score": {"pass_frac": 1.0}, "finish": "stop", "wall_s": 8.5, "out_tok": 125}
+{"name": "math_1", "copy": 0, "score": {"correct": 1}, "finish": "stop", "wall_s": 10.9, "out_tok": 137}
+{"name": "math_2", "copy": 0, "score": {"correct": 1}, "finish": "stop", "wall_s": 13.7, "out_tok": 226}
+{"name": "math_3", "copy": 0, "score": {"correct": 1}, "finish": "stop", "wall_s": 12.6, "out_tok": 211}
+{"name": "math_4", "copy": 0, "score": {"correct": 0}, "finish": "stop", "wall_s": 12.2, "out_tok": 198}
+{"name": "long_gen", "copy": 0, "score": {"words": 3131, "rep4": 0.0074, "nonascii": 0.0021}, "finish": "stop", "wall_s": 246.5, "out_tok": 4426}
+QA DONE

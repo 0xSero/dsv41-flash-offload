@@ -1,0 +1,54 @@
+--- exl3h/exl3.py	2026-10-03 01:39:50
++++ cand11/exl3bt/exl3.py	2026-10-05 03:38:50
+@@ -2330,8 +2330,9 @@
+ class _HostExpertTrellis:
+     """Storage for one stacked trellis param split into hot (GPU) and cold (pinned host) rows."""
+ 
+-    def __init__(self, n_exp: int, cold_ids, row_shape, device, host_row_shape=None):
++    def __init__(self, n_exp: int, cold_ids, row_shape, device, host_row_shape=None, shm_name=None):
+         self.n_exp = n_exp
++        self.shm_path = None
+         self.cold = sorted(cold_ids)
+         cold_set = set(self.cold)
+         self.hot = [e for e in range(n_exp) if e not in cold_set]
+@@ -2343,7 +2344,27 @@
+         self.gpu = torch.empty((len(self.hot),) + tuple(row_shape), dtype=torch.int16, device=device)
+         # explicit device: vLLM builds models under a CUDA default device. Exact-size pageable buffer + cudaHostRegister
+         # instead of .pin_memory(): torch's caching host allocator rounds to powers of two (~2x host RAM here -> OOM).
+-        self.host = torch.empty((len(self.cold),) + tuple(host_row_shape or row_shape), dtype=torch.int16, device="cpu")
++        _hshape = (len(self.cold),) + tuple(host_row_shape or row_shape)
++        _shm_dir = os.environ.get("EXL3_HOST_SHM_DIR", "")
++        if _shm_dir and shm_name and len(self.cold):
++            # B70 expert tier: the host store lives in a shared tmpfs file so a second (XPU) process can map and DMA it
++            import ctypes as _ct
++            _n = 1
++            for _d in _hshape:
++                _n *= int(_d)
++            self.shm_path = os.path.join(_shm_dir, shm_name.replace("/", "_") + ".bin")
++            _fd = os.open(self.shm_path, os.O_RDWR | os.O_CREAT | os.O_TRUNC, 0o666)
++            # +4 KiB tail pad: the CPU tier's AVX2 tile decoder reads 8 bytes past the last 96-byte tile, and an exactly
++            # page-sized shared mapping has nothing mapped behind it (cand11 SIGSEGV at store end, repro REP-huge1)
++            os.ftruncate(_fd, _n * 2 + 4096); os.fchmod(_fd, 0o666); os.close(_fd)
++            self.host = torch.from_file(self.shm_path, shared=True, size=_n + 2048, dtype=torch.int16)[:_n].view(_hshape)
++            if os.environ.get("EXL3_HOST_SHM_HUGE", "0") == "1":   # off by default: keep khugepaged away from pinned shmem
++                try:
++                    _ct.CDLL(None).madvise(_ct.c_void_p(self.host.data_ptr()), _ct.c_size_t(_n * 2), 14)  # MADV_HUGEPAGE
++                except Exception:
++                    pass
++        else:
++            self.host = torch.empty(_hshape, dtype=torch.int16, device="cpu")
+         if self.host.numel():
+             err = torch.cuda.cudart().cudaHostRegister(self.host.data_ptr(), self.host.numel() * 2, 3)  # Portable|Mapped
+             if "success" not in str(err).lower() and str(err) != "0":
+@@ -2402,8 +2423,9 @@
+             _dev = torch.device("cuda", torch.cuda.current_device())
+             _ckw = _cold_pack_bits() * 16 if _EXL3_HOST_COLD_PACK else k_words
+             layer._exl3_cold_k = _ckw // 16
+-            layer._exl3_host13 = _HostExpertTrellis(num_experts, _cold, (2, in_tiles, out_tiles, k_words), _dev, host_row_shape=(2, in_tiles, out_tiles, _ckw))
+-            layer._exl3_host2 = _HostExpertTrellis(num_experts, _cold, (out_tiles, in_tiles, k_words), _dev, host_row_shape=(out_tiles, in_tiles, _ckw))
++            _ln = str(getattr(layer, "layer_name", ""))
++            layer._exl3_host13 = _HostExpertTrellis(num_experts, _cold, (2, in_tiles, out_tiles, k_words), _dev, host_row_shape=(2, in_tiles, out_tiles, _ckw), shm_name="w13_" + _ln)
++            layer._exl3_host2 = _HostExpertTrellis(num_experts, _cold, (out_tiles, in_tiles, k_words), _dev, host_row_shape=(out_tiles, in_tiles, _ckw), shm_name="w2_" + _ln)
+             layer._exl3_num_experts = num_experts
+             # placeholder with the right leading dim (n_exp) but no trellis payload; loads are redirected
+             w13_trellis = Parameter(torch.empty(num_experts, 1, dtype=torch.int16, device=_dev), requires_grad=False)

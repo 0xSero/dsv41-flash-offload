@@ -1,5 +1,18 @@
 # dsv41-flash-offload
 
+![DeepSeek-V4.1-Flash on one RTX 3090](docs/banner.svg)
+
+## At a glance
+
+| | |
+|---|---|
+| Model | DeepSeek-V4.1-Flash, EXL3 3.0 bpw (about 200 GB of experts), 262,144-token context |
+| Hardware | 1x RTX 3090 24 GB, 256+ GiB RAM, an AVX2 CPU with 24+ cores, NVMe |
+| Default (D141) | decode 19.3 / 24.0 / 26.6 tok/s at 1 / 2 / 4 streams; prefill 690-790 tok/s from 8k to 261k |
+| Quality (D141) | 50/50 long-prompt and long-task runs correct at C1 and C4: needle retrieval at 8k/64k/200k, executed code tests, math, long essays. See [results/Q001-d141-quality](results/Q001-d141-quality/) |
+| Image | `ghcr.io/0xsero/dsv41-flash-offload:d141-main`, pinned digest and attestation under [Run](#run) |
+| Experimental | Intel Arc B70 expert tier: **41.3 tok/s at 4 streams (+55%)**, crash root-caused and fixed, quality A/B pending. See [experimental/b70-tier](experimental/b70-tier/) |
+
 Serve **DeepSeek-V4.1-Flash** (EXL3 3.0 bpw, 384 routed experts x 40 MoE layers, Engram n-gram tables) from **one
 24 GB RTX 3090** plus host DDR4 and NVMe, with an OpenAI-compatible API (chat with tool calls and reasoning,
 completions). All routed experts are pinned in host RAM. During prefill the copy engine streams them into VRAM slots
@@ -143,12 +156,14 @@ Notes:
 
 ## Run
 
-Image: `ghcr.io/0xsero/dsv41-flash-offload@sha256:<digest>`. The digest is filled in after the
-[local-ai-images](https://github.com/0xSero/local-ai-images) release workflow publishes it. Until then, build it
-locally with `docker build -f docker/Dockerfile -t dsv41-flash-offload .`
+Image: `ghcr.io/0xsero/dsv41-flash-offload@sha256:c247bad773a3d31af7420d99ead6d1d521f20d50df4b6c346c26f80f5ca30cf3` (tag `d141-main`).
+- It was built from this repo at `2b60498` (D141) by local-ai-images run
+  [37115412498](https://github.com/0xSero/local-ai-images/actions/runs/37115412498).
+- It carries a build attestation: `gh attestation verify oci://ghcr.io/0xsero/dsv41-flash-offload@sha256:c247bad773a3d31af7420d99ead6d1d521f20d50df4b6c346c26f80f5ca30cf3 -o 0xSero`.
+- To build it yourself instead: `docker build -f docker/Dockerfile -t dsv41-flash-offload .`
 
 ```bash
-IMAGE=ghcr.io/0xsero/dsv41-flash-offload@sha256:<digest>
+IMAGE=ghcr.io/0xsero/dsv41-flash-offload@sha256:c247bad773a3d31af7420d99ead6d1d521f20d50df4b6c346c26f80f5ca30cf3
 MODEL_ROOT=/srv/models          # ~430 GB free, fast NVMe
 CACHE_ROOT=/srv/cache/dsv41     # torch-extension / Triton / compile caches (warm restarts)
 

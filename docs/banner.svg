@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-label="DeepSeek-V4.1-Flash runs on one RTX 3090">
+  <defs>
+    <radialGradient id="bg" cx="85%" cy="0%" r="110%">
+      <stop offset="0" stop-color="#3552f0"/><stop offset=".32" stop-color="#2a44d6"/><stop offset=".78" stop-color="#0b1437"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="420" fill="url(#bg)"/>
+  <path d="M0 300 C150 260 300 340 450 300 S750 260 900 300 S1100 330 1200 295 V420 H0Z" fill="#4d6bfe" opacity=".55"/>
+  <path d="M0 330 C170 300 330 370 520 330 S860 300 1020 335 S1150 345 1200 325 V420 H0Z" fill="#2a44d6" opacity=".85"/>
+  <path d="M0 365 C200 345 380 395 600 365 S960 345 1200 368 V420 H0Z" fill="#0b1437"/>
+  <g font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" fill="#ffffff">
+    <rect x="56" y="48" width="30" height="30" rx="8" fill="#ffffff"/>
+    <path d="M60 66c3-4 6-4 9 0s6 4 9 0 4-2 6-1" stroke="#4d6bfe" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <text x="98" y="70" font-size="18" font-weight="700">DeepSeek-V4.1-Flash · local</text>
+    <text x="56" y="150" font-size="60" font-weight="800" letter-spacing="-1">One RTX 3090.</text>
+    <text x="56" y="215" font-size="60" font-weight="800" letter-spacing="-1" fill="#9fb2ff">Full DeepSeek.</text>
+    <text x="56" y="255" font-size="18" fill="#d6dcff">200 GB MoE · experts across GPU, CPU and RAM · 262k context</text>
+    <g transform="translate(790,92)">
+      <rect width="350" height="190" rx="16" fill="#ffffff" fill-opacity=".08" stroke="#ffffff" stroke-opacity=".25"/>
+      <text x="24" y="62" font-size="46" font-weight="800">20</text><text x="326" y="48" font-size="14" text-anchor="end" fill="#d6dcff">tok/s, 1 user</text><text x="326" y="66" font-size="14" text-anchor="end" fill="#d6dcff">(D141, default)</text>
+      <line x1="24" x2="326" y1="88" y2="88" stroke="#ffffff" stroke-opacity=".25"/>
+      <text x="24" y="146" font-size="46" font-weight="800">41</text><text x="326" y="132" font-size="14" text-anchor="end" fill="#d6dcff">tok/s, 4 users</text><text x="326" y="150" font-size="14" text-anchor="end" fill="#d6dcff">+ Arc B70 (experimental)</text>
+    </g>
+    <text x="600" y="404" font-size="12" text-anchor="middle" fill="#ffffff" fill-opacity=".8" font-family="ui-monospace, Menlo, monospace">Community build · not affiliated with DeepSeek · measured on 1x RTX 3090 (+1x Arc B70)</text>
+  </g>
+</svg>

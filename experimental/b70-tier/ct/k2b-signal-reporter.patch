@@ -1,0 +1,61 @@
+--- k2/ft_tier_ext.cpp	2026-10-03 03:15:44
++++ k2b/ft_tier_ext.cpp	2026-10-04 14:09:26
+@@ -9,6 +9,28 @@
+ // zero-copy / staging paths use); suh/svh are CPU copies of the GPU's tensors.
+ #include <torch/extension.h>
+ #include "ft_core.h"
++#include <signal.h>
++#include <unistd.h>
++#include <cstring>
++// k2b diagnostics: report SIGSEGV/SIGBUS address + the CPU-tier job in flight, then chain to the previous handler
++static volatile long g_job[6] = {0, 0, 0, 0, 0, 0};   // li, ntok, np, seq, store_lo, store_hi
++static struct sigaction g_prev_segv, g_prev_bus;
++static void ft_put(const char* s) { ssize_t r = write(2, s, strlen(s)); (void) r; }
++static void ft_hex(unsigned long v) { char b[19]; b[0] = 48; b[1] = 120; for (int i = 0; i < 16; ++i) { int d = (v >> (60 - 4 * i)) & 15; b[2 + i] = char(d < 10 ? 48 + d : 87 + d); } b[18] = 0; ft_put(b); }
++static void ft_dec(long v) { char b[24]; int n = 0; bool neg = v < 0; unsigned long u = neg ? -v : v; do { b[n++] = char(48 + u % 10); u /= 10; } while (u); if (neg) b[n++] = 45; char o[24]; for (int i = 0; i < n; ++i) o[i] = b[n - 1 - i]; o[n] = 0; ft_put(o); }
++static void ft_sig(int sig, siginfo_t* si, void* uc)
++{
++    ft_put("\n[k2b] signal "); ft_dec(sig); ft_put(" code "); ft_dec(si->si_code); ft_put(" addr "); ft_hex((unsigned long) si->si_addr);
++    ft_put(" job li "); ft_dec(g_job[0]); ft_put(" ntok "); ft_dec(g_job[1]); ft_put(" np "); ft_dec(g_job[2]); ft_put(" seq "); ft_dec(g_job[3]);
++    ft_put(" store "); ft_hex((unsigned long) g_job[4]); ft_put(".."); ft_hex((unsigned long) g_job[5]); ft_put("\n");
++    struct sigaction* prev = sig == SIGBUS ? &g_prev_bus : &g_prev_segv;
++    sigaction(sig, prev, nullptr);   // re-executing the faulting instruction now runs the previous handler
++}
++static void ft_install_sig()
++{
++    struct sigaction sa; memset(&sa, 0, sizeof(sa)); sa.sa_sigaction = ft_sig; sa.sa_flags = SA_SIGINFO | SA_ONSTACK; sigemptyset(&sa.sa_mask);
++    sigaction(SIGSEGV, &sa, &g_prev_segv); sigaction(SIGBUS, &sa, &g_prev_bus);
++}
+ 
+ namespace ft {
+ 
+@@ -72,6 +94,13 @@
+         L.ex[e].d = { reinterpret_cast<const uint8_t*>(p[e][2]), u16(suh_d, e), u16(svh_d, e), I, H };
+     }
+     for (auto& t : { ptrs, suh_g, svh_g, suh_u, svh_u, suh_d, svh_d }) T->keep.push_back(t);
++    for (int e = 0; e < E; ++e)
++        for (int k = 0; k < 3; ++k)
++        {
++            const long lo = long(p[e][k]), hi = lo + long(H / 16) * (I / 16) * 96;
++            if (g_job[4] == 0 || lo < g_job[4]) g_job[4] = lo;
++            if (hi > g_job[5]) g_job[5] = hi;
++        }
+     if (T->swz)
+     {
+         // CPU-side block-contiguous copy ([n/128][k/16][8 tiles]): every 128-output work unit streams one
+@@ -102,6 +131,7 @@
+ 
+ void run_job(int li, int ntok, int np)
+ {
++    g_job[0] = li; g_job[1] = ntok; g_job[2] = np; g_job[3] = T->ctrl[0];
+     const int H = T->H;
+     T->xf.resize(size_t(std::max(ntok, 1)) * H);
+     const size_t nx = size_t(ntok) * H;
+@@ -137,6 +167,7 @@
+ 
+ void worker_main(int cpu0)
+ {
++    ft_install_sig();
+     Pool::pin(cpu0);
+     int64_t last = T->ctrl[0];
+     long idle = 0;

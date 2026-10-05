@@ -1,0 +1,81 @@
+{"name": "needle_8k", "copy": 0, "score": {"facts": 3}, "finish": "stop", "wall_s": 67.9, "out_tok": 337}
+{"name": "needle_64k", "copy": 0, "score": {"facts": 3}, "finish": "stop", "wall_s": 57.9, "out_tok": 297}
+{"name": "needle_200k", "copy": 0, "score": {"facts": 3}, "finish": "stop", "wall_s": 61.7, "out_tok": 318}
+{"name": "code_lru", "copy": 0, "score": {"pass": 1}, "finish": "stop", "wall_s": 24.0, "out_tok": 133}
+{"name": "code_rpn", "copy": 0, "score": {"pass_frac": 1.0}, "finish": "stop", "wall_s": 21.8, "out_tok": 125}
+{"name": "math_1", "copy": 0, "score": {"correct": 1}, "finish": "stop", "wall_s": 25.3, "out_tok": 137}
+{"name": "math_2", "copy": 0, "score": {"correct": 1}, "finish": "stop", "wall_s": 22.4, "out_tok": 142}
+{"name": "math_3", "copy": 0, "score": {"correct": 1}, "finish": "stop", "wall_s": 35.8, "out_tok": 211}
+{"name": "math_4", "copy": 0, "score": {"correct": 0}, "finish": "stop", "wall_s": 29.6, "out_tok": 188}
+{"name": "long_gen", "copy": 0, "score": {"words": 2590, "rep4": 0.0039, "nonascii": 0.0029}, "finish": "stop", "wall_s": 563.6, "out_tok": 3849}
+{"name": "code_lru", "copy": 3, "score": {"pass": 1}, "finish": "stop", "wall_s": 29.4, "out_tok": 133}
+{"name": "code_rpn", "copy": 3, "score": {"pass_frac": 1.0}, "finish": "stop", "wall_s": 22.5, "out_tok": 125}
+{"name": "math_1", "copy": 3, "score": {"correct": 1}, "finish": "stop", "wall_s": 27.9, "out_tok": 137}
+{"name": "math_2", "copy": 3, "score": {"correct": 1}, "finish": "stop", "wall_s": 43.9, "out_tok": 226}
+{"name": "math_3", "copy": 3, "score": {"correct": 1}, "finish": "stop", "wall_s": 40.9, "out_tok": 211}
+{"name": "math_4", "copy": 3, "score": {"correct": 0}, "finish": "stop", "wall_s": 37.0, "out_tok": 204}
+{"name": "long_gen", "copy": 3, "score": {"words": 2509, "rep4": 0.0024, "nonascii": 0.0025}, "finish": "stop", "wall_s": 557.6, "out_tok": 3772}
+{"name": "needle_8k", "copy": 3, "score": {"facts": 3}, "finish": "stop", "wall_s": 44.6, "out_tok": 280}
+{"name": "needle_64k", "copy": 3, "score": {"facts": 3}, "finish": "stop", "wall_s": 54.1, "out_tok": 348}
+{"name": "needle_200k", "copy": 3, "score": {"facts": 3}, "finish": "stop", "wall_s": 65.4, "out_tok": 378}
+{"name": "needle_200k", "copy": 2, "score": {"facts": 3}, "finish": "stop", "wall_s": 56.2, "out_tok": 272}
+{"name": "code_lru", "copy": 2, "score": {"pass": 1}, "finish": "stop", "wall_s": 28.7, "out_tok": 133}
+{"name": "code_rpn", "copy": 2, "score": {"pass_frac": 1.0}, "finish": "stop", "wall_s": 21.6, "out_tok": 125}
+{"name": "math_1", "copy": 2, "score": {"correct": 1}, "finish": "stop", "wall_s": 27.2, "out_tok": 134}
+{"name": "math_2", "copy": 2, "score": {"correct": 1}, "finish": "stop", "wall_s": 40.4, "out_tok": 224}
+{"name": "math_3", "copy": 2, "score": {"correct": 1}, "finish": "stop", "wall_s": 40.9, "out_tok": 211}
+{"name": "math_4", "copy": 2, "score": {"correct": 0}, "finish": "stop", "wall_s": 35.3, "out_tok": 205}
+{"name": "long_gen", "copy": 2, "score": {"words": 2948, "rep4": 0.0051, "nonascii": 0.0015}, "finish": "stop", "wall_s": 632.3, "out_tok": 4282}
+{"name": "needle_8k", "copy": 2, "score": {"facts": 3}, "finish": "stop", "wall_s": 44.1, "out_tok": 274}
+{"name": "needle_64k", "copy": 2, "score": {"facts": 3}, "finish": "stop", "wall_s": 34.7, "out_tok": 373}
+{"name": "needle_64k", "copy": 1, "score": {"facts": 3}, "finish": "stop", "wall_s": 79.7, "out_tok": 398}
+{"name": "needle_200k", "copy": 1, "score": {"facts": 3}, "finish": "stop", "wall_s": 56.5, "out_tok": 272}
+{"name": "code_lru", "copy": 1, "score": {"pass": 1}, "finish": "stop", "wall_s": 22.4, "out_tok": 133}
+{"name": "code_rpn", "copy": 1, "score": {"pass_frac": 1.0}, "finish": "stop", "wall_s": 23.4, "out_tok": 125}
+{"name": "math_1", "copy": 1, "score": {"correct": 1}, "finish": "stop", "wall_s": 25.2, "out_tok": 135}
+{"name": "math_2", "copy": 1, "score": {"correct": 1}, "finish": "stop", "wall_s": 39.7, "out_tok": 223}
+{"name": "math_3", "copy": 1, "score": {"correct": 1}, "finish": "stop", "wall_s": 37.0, "out_tok": 212}
+{"name": "math_4", "copy": 1, "score": {"correct": 0}, "finish": "stop", "wall_s": 31.1, "out_tok": 198}
+{"name": "long_gen", "copy": 1, "score": {"words": 3648, "rep4": 0.0077, "nonascii": 0.0025}, "finish": "stop", "wall_s": 686.8, "out_tok": 5265}
+{"name": "needle_8k", "copy": 1, "score": {"facts": 3}, "finish": "stop", "wall_s": 18.3, "out_tok": 274}
+{"name": "code_lru", "copy": 0, "agree_prefix": 133, "len": 133, "ref_len": 133, "mean_abs_dlogprob": 0.00025, "score": {"pass": 1}, "ref_score": {"pass": 1}}
+{"name": "code_lru", "copy": 1, "agree_prefix": 133, "len": 133, "ref_len": 133, "mean_abs_dlogprob": 0.00037, "score": {"pass": 1}, "ref_score": {"pass": 1}}
+{"name": "code_lru", "copy": 2, "agree_prefix": 133, "len": 133, "ref_len": 133, "mean_abs_dlogprob": 0.00022, "score": {"pass": 1}, "ref_score": {"pass": 1}}
+{"name": "code_lru", "copy": 3, "agree_prefix": 133, "len": 133, "ref_len": 133, "mean_abs_dlogprob": 0.00048, "score": {"pass": 1}, "ref_score": {"pass": 1}}
+{"name": "code_rpn", "copy": 0, "agree_prefix": 125, "len": 125, "ref_len": 125, "mean_abs_dlogprob": 0.00537, "score": {"pass_frac": 1.0}, "ref_score": {"pass_frac": 1.0}}
+{"name": "code_rpn", "copy": 1, "agree_prefix": 125, "len": 125, "ref_len": 125, "mean_abs_dlogprob": 0.00274, "score": {"pass_frac": 1.0}, "ref_score": {"pass_frac": 1.0}}
+{"name": "code_rpn", "copy": 2, "agree_prefix": 125, "len": 125, "ref_len": 125, "mean_abs_dlogprob": 0.00356, "score": {"pass_frac": 1.0}, "ref_score": {"pass_frac": 1.0}}
+{"name": "code_rpn", "copy": 3, "agree_prefix": 125, "len": 125, "ref_len": 125, "mean_abs_dlogprob": 0.00424, "score": {"pass_frac": 1.0}, "ref_score": {"pass_frac": 1.0}}
+{"name": "long_gen", "copy": 0, "agree_prefix": 45, "len": 3849, "ref_len": 4426, "mean_abs_dlogprob": 0.01763, "score": {"words": 2590, "rep4": 0.0039, "nonascii": 0.0029}, "ref_score": {"words": 3131, "rep4": 0.0074, "nonascii": 0.0021}}
+{"name": "long_gen", "copy": 1, "agree_prefix": 45, "len": 5265, "ref_len": 4426, "mean_abs_dlogprob": 0.01758, "score": {"words": 3648, "rep4": 0.0077, "nonascii": 0.0025}, "ref_score": {"words": 3131, "rep4": 0.0074, "nonascii": 0.0021}}
+{"name": "long_gen", "copy": 2, "agree_prefix": 45, "len": 4282, "ref_len": 4426, "mean_abs_dlogprob": 0.01069, "score": {"words": 2948, "rep4": 0.0051, "nonascii": 0.0015}, "ref_score": {"words": 3131, "rep4": 0.0074, "nonascii": 0.0021}}
+{"name": "long_gen", "copy": 3, "agree_prefix": 45, "len": 3772, "ref_len": 4426, "mean_abs_dlogprob": 0.01633, "score": {"words": 2509, "rep4": 0.0024, "nonascii": 0.0025}, "ref_score": {"words": 3131, "rep4": 0.0074, "nonascii": 0.0021}}
+{"name": "math_1", "copy": 0, "agree_prefix": 137, "len": 137, "ref_len": 137, "mean_abs_dlogprob": 0.01014, "score": {"correct": 1}, "ref_score": {"correct": 1}}
+{"name": "math_1", "copy": 1, "agree_prefix": 3, "len": 135, "ref_len": 137, "mean_abs_dlogprob": 0.0, "score": {"correct": 1}, "ref_score": {"correct": 1}}
+{"name": "math_1", "copy": 2, "agree_prefix": 92, "len": 134, "ref_len": 137, "mean_abs_dlogprob": 0.01271, "score": {"correct": 1}, "ref_score": {"correct": 1}}
+{"name": "math_1", "copy": 3, "agree_prefix": 137, "len": 137, "ref_len": 137, "mean_abs_dlogprob": 0.01057, "score": {"correct": 1}, "ref_score": {"correct": 1}}
+{"name": "math_2", "copy": 0, "agree_prefix": 24, "len": 142, "ref_len": 226, "mean_abs_dlogprob": 0.01689, "score": {"correct": 1}, "ref_score": {"correct": 1}}
+{"name": "math_2", "copy": 1, "agree_prefix": 57, "len": 223, "ref_len": 226, "mean_abs_dlogprob": 0.01188, "score": {"correct": 1}, "ref_score": {"correct": 1}}
+{"name": "math_2", "copy": 2, "agree_prefix": 124, "len": 224, "ref_len": 226, "mean_abs_dlogprob": 0.01057, "score": {"correct": 1}, "ref_score": {"correct": 1}}
+{"name": "math_2", "copy": 3, "agree_prefix": 226, "len": 226, "ref_len": 226, "mean_abs_dlogprob": 0.00859, "score": {"correct": 1}, "ref_score": {"correct": 1}}
+{"name": "math_3", "copy": 0, "agree_prefix": 211, "len": 211, "ref_len": 211, "mean_abs_dlogprob": 0.00456, "score": {"correct": 1}, "ref_score": {"correct": 1}}
+{"name": "math_3", "copy": 1, "agree_prefix": 100, "len": 212, "ref_len": 211, "mean_abs_dlogprob": 0.0111, "score": {"correct": 1}, "ref_score": {"correct": 1}}
+{"name": "math_3", "copy": 2, "agree_prefix": 211, "len": 211, "ref_len": 211, "mean_abs_dlogprob": 0.00764, "score": {"correct": 1}, "ref_score": {"correct": 1}}
+{"name": "math_3", "copy": 3, "agree_prefix": 211, "len": 211, "ref_len": 211, "mean_abs_dlogprob": 0.00675, "score": {"correct": 1}, "ref_score": {"correct": 1}}
+{"name": "math_4", "copy": 0, "agree_prefix": 9, "len": 188, "ref_len": 198, "mean_abs_dlogprob": 0.0347, "score": {"correct": 0}, "ref_score": {"correct": 0}}
+{"name": "math_4", "copy": 1, "agree_prefix": 29, "len": 198, "ref_len": 198, "mean_abs_dlogprob": 0.00603, "score": {"correct": 0}, "ref_score": {"correct": 0}}
+{"name": "math_4", "copy": 2, "agree_prefix": 9, "len": 205, "ref_len": 198, "mean_abs_dlogprob": 0.02217, "score": {"correct": 0}, "ref_score": {"correct": 0}}
+{"name": "math_4", "copy": 3, "agree_prefix": 9, "len": 204, "ref_len": 198, "mean_abs_dlogprob": 0.04001, "score": {"correct": 0}, "ref_score": {"correct": 0}}
+{"name": "needle_200k", "copy": 0, "agree_prefix": 62, "len": 318, "ref_len": 326, "mean_abs_dlogprob": 0.0057, "score": {"facts": 3}, "ref_score": {"facts": 3}}
+{"name": "needle_200k", "copy": 1, "agree_prefix": 67, "len": 272, "ref_len": 326, "mean_abs_dlogprob": 0.00708, "score": {"facts": 3}, "ref_score": {"facts": 3}}
+{"name": "needle_200k", "copy": 2, "agree_prefix": 67, "len": 272, "ref_len": 326, "mean_abs_dlogprob": 0.0093, "score": {"facts": 3}, "ref_score": {"facts": 3}}
+{"name": "needle_200k", "copy": 3, "agree_prefix": 62, "len": 378, "ref_len": 326, "mean_abs_dlogprob": 0.00536, "score": {"facts": 3}, "ref_score": {"facts": 3}}
+{"name": "needle_64k", "copy": 0, "agree_prefix": 114, "len": 297, "ref_len": 389, "mean_abs_dlogprob": 0.02912, "score": {"facts": 3}, "ref_score": {"facts": 3}}
+{"name": "needle_64k", "copy": 1, "agree_prefix": 0, "len": 398, "ref_len": 389, "mean_abs_dlogprob": 0.0, "score": {"facts": 3}, "ref_score": {"facts": 3}}
+{"name": "needle_64k", "copy": 2, "agree_prefix": 63, "len": 373, "ref_len": 389, "mean_abs_dlogprob": 0.0161, "score": {"facts": 3}, "ref_score": {"facts": 3}}
+{"name": "needle_64k", "copy": 3, "agree_prefix": 62, "len": 348, "ref_len": 389, "mean_abs_dlogprob": 0.01513, "score": {"facts": 3}, "ref_score": {"facts": 3}}
+{"name": "needle_8k", "copy": 0, "agree_prefix": 65, "len": 337, "ref_len": 247, "mean_abs_dlogprob": 0.00934, "score": {"facts": 3}, "ref_score": {"facts": 3}}
+{"name": "needle_8k", "copy": 1, "agree_prefix": 63, "len": 274, "ref_len": 247, "mean_abs_dlogprob": 0.00663, "score": {"facts": 3}, "ref_score": {"facts": 3}}
+{"name": "needle_8k", "copy": 2, "agree_prefix": 65, "len": 274, "ref_len": 247, "mean_abs_dlogprob": 0.00725, "score": {"facts": 3}, "ref_score": {"facts": 3}}
+{"name": "needle_8k", "copy": 3, "agree_prefix": 65, "len": 280, "ref_len": 247, "mean_abs_dlogprob": 0.01398, "score": {"facts": 3}, "ref_score": {"facts": 3}}
+QA DONE
