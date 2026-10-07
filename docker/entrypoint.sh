@@ -34,10 +34,10 @@ case "${1:-}" in
             [ "$FREE_GB" -ge 400 ] || die "only ${FREE_GB} GiB free at $MODELS; inputs are 422 GB (393 GiB) + 3 GB pack"
             python3 "$ROOT/pack/download.py" --root "$MODELS"
         fi
-        if [ -e "$PACK/config.json" ]; then
-            log "pack already exists at $PACK; delete it to rebuild"
+        if [ -e "$PACK/config.json" ] && python3 "$ROOT/pack/verify.py" --pack "$PACK"; then
+            log "verified existing pack at $PACK"
         else
-            rm -rf "$PACK"   # a partial pack from an interrupted run
+            [ ! -e "$PACK" ] && [ ! -L "$PACK" ] || die "existing pack failed verification; use a fresh DSV41_PACK output directory"
             python3 "$ROOT/pack/prepare_pack.py" --source "$MODELS/Mia-DeepSeek-V4.1-Flash-EXL3-3.0bpw" \
                 --engram "$MODELS/DeepSeek-V4.1-Flash-engram" --out "$PACK"
             python3 "$ROOT/pack/expand_native_dense.py" --pack "$PACK"
