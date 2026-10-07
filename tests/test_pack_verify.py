@@ -3,6 +3,8 @@ import importlib.util
 import json
 from pathlib import Path
 import tempfile
+import os
+import subprocess
 import unittest
 
 spec = importlib.util.spec_from_file_location('pack_verify', Path(__file__).parents[1] / 'pack/verify.py')
@@ -39,3 +41,25 @@ class PackVerifyTest(unittest.TestCase):
     def test_empty_group_receipt_fails(self):
         (self.pack / 'adapter-receipt.json').write_text('{"grouped_woa":[]}')
         self.assertTrue(module.verify(self.pack, self.want))
+
+    def test_duplicate_group_receipt_fails(self):
+        row = {'key': self.key, 'sha256': self.want['grouped_woa'][self.key]}
+        (self.pack / 'adapter-receipt.json').write_text(json.dumps({'grouped_woa': [row, row]}))
+        self.assertTrue(module.verify(self.pack, self.want))
+    def test_unsafe_indexed_filename_fails(self):
+        (self.pack / 'model.safetensors.index.json').write_text(json.dumps({'weight_map': {self.key: '../outside'}}))
+        self.assertTrue(module.verify(self.pack, self.want))
+    def test_prepare_preserves_existing_invalid_output(self):
+        root = Path(self.temp.name); models = root / 'models'; models.mkdir()
+        output = models / 'Mia-DeepSeek-V4.1-Flash-EXL3-3.0bpw'; output.mkdir()
+        marker = output / 'config.json'; marker.write_text('checkpoint')
+        engram = models / 'DeepSeek-V4.1-Flash-engram'; engram.mkdir()
+        (engram / 'model-00048-of-00048.safetensors').touch()
+        bins = root / 'bin'; bins.mkdir()
+        for name, body in {'timeout':'shift; exec "$@"', 'nvidia-smi':'if [[ $* == *memory.total* ]]; then echo 24576; else echo GPU0; fi', 'python3':'exit 1'}.items():
+            script = bins / name; script.write_text('#!/bin/bash\n' + body + '\n'); script.chmod(0o755)
+        env = dict(os.environ, PATH=str(bins)+':'+os.environ['PATH'], DSV41_MODEL_ROOT=str(models), DSV41_PACK=str(output))
+        result = subprocess.run(['bash', str(Path(__file__).parents[1] / 'docker/entrypoint.sh'), 'prepare'], env=env, capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('fresh DSV41_PACK output directory', result.stderr)
+        self.assertEqual(marker.read_text(), 'checkpoint')
