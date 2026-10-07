@@ -1,0 +1,13 @@
+name: test
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  pack-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Verify pack integrity and preservation of existing inputs
+        run: python3 -m unittest discover -s tests -p 'test_pack_verify.py' -v
+      - name: Entrypoint parses
+        run: bash -n docker/entrypoint.sh

@@ -1,5 +1,6 @@
 """Expand only native V4.1 projections that bypass quantization methods."""
 import json
+from verify import sha256
 from pathlib import Path
 import torch
 from safetensors import safe_open
@@ -39,5 +40,6 @@ if 'text_config' in cfg:cfg['text_config']['quantization_config']=q
 (pack/'config.json').write_text(json.dumps(cfg,indent=2))
 (pack/'quantization_config.json').write_text(json.dumps(q,indent=2))
 (pack/'model.safetensors.index.json').write_text(json.dumps(index,indent=2))
-result={'expanded':receipt,'bytes':sum(w.numel()*w.element_size() for w in weights.values()),'remaining_dense_quant_modules':len(layers)}
+output_sha256 = sha256(pack/'native-dense.safetensors')
+result={'expanded':receipt,'bytes':sum(w.numel()*w.element_size() for w in weights.values()),'remaining_dense_quant_modules':len(layers), 'sha256':output_sha256}
 (a.result or pack/'native-dense-receipt.json').write_text(json.dumps(result,indent=2));print(json.dumps({k:v for k,v in result.items() if k!='expanded'},indent=2),flush=True)
